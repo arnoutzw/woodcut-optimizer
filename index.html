@@ -89,7 +89,7 @@ tailwind.config = {
 
   <!-- ==================== STOCK TAB ==================== -->
   <div id="panel-stock" class="fade-in">
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 gap-6">
 
       <!-- Sheet Stock -->
       <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-5">
@@ -712,11 +712,8 @@ tailwind.config = {
       </div>
 
       <!-- Detailed Stats -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-5">
-          <h2 class="font-mono font-bold text-zinc-100 mb-3">Sheet Utilization Breakdown</h2>
-          <canvas id="util-chart" height="250"></canvas>
-        </div>
+      <div class="grid grid-cols-1 gap-6">
+        
         <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-5">
           <h2 class="font-mono font-bold text-zinc-100 mb-3">Cut List</h2>
           <div class="overflow-y-auto max-h-64">
@@ -800,7 +797,7 @@ function switchTab(tab) {
       : 'tab-inactive px-4 py-2 font-mono text-xs font-bold transition-colors';
   });
   if (tab === 'optimize') runPrecheck();
-  if (tab === 'results' && state.results) drawUtilChart();
+  
 }
 
 // ============================================================
@@ -1819,7 +1816,7 @@ function drawSheetLayout() {
   // Sheet tabs
   const tabsEl = document.getElementById('sheet-tabs');
   tabsEl.innerHTML = state.results.sheets.map((s, i) => `
-    <button onclick="state.currentSheet=${i}; drawSheetLayout()" class="${i === state.currentSheet ? 'bg-amber-500 text-zinc-900' : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'} text-xs font-mono px-2 py-1 rounded transition-colors">Sheet ${i + 1}</button>
+    <button onclick="state.currentSheet=${i}; drawSheetLayout()" class="${i === state.currentSheet ? 'bg-amber-500 text-zinc-900' : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'} text-xs font-mono px-2 py-1 rounded transition-colors">Sheet ${i + 1} \u2014 ${((s.placements.reduce((a,p)=>a+p.w*p.h,0)/(s.length*s.width))*100).toFixed(0)}%</button>
   `).join('');
 
   const sheet = state.results.sheets[state.currentSheet];
@@ -2018,64 +2015,9 @@ function renderResults() {
     : '<p class="text-xs text-zinc-500 font-mono col-span-3">No significant offcuts</p>';
   lucide.createIcons();
 
-  drawUtilChart();
-}
+  }
 
-function drawUtilChart() {
-  if (!state.results) return;
-  const canvas = document.getElementById('util-chart');
-  const ctx = canvas.getContext('2d');
-  const dpr = 2;
-  const W = canvas.offsetWidth;
-  const H = 250;
-  canvas.width = W * dpr;
-  canvas.height = H * dpr;
-  ctx.scale(dpr, dpr);
-  ctx.fillStyle = '#18181b';
-  ctx.fillRect(0, 0, W, H);
 
-  const sheets = state.results.sheets;
-  if (sheets.length === 0) return;
-  const barW = Math.min(60, (W - 60) / sheets.length - 10);
-  const maxArea = Math.max(...sheets.map(s => s.length * s.width));
-  const pad = { top: 20, bottom: 40, left: 40, right: 20 };
-  const chartH = H - pad.top - pad.bottom;
-  const chartW = W - pad.left - pad.right;
-
-  sheets.forEach((sheet, i) => {
-    const totalArea = sheet.length * sheet.width;
-    const usedArea = sheet.placements.reduce((a, p) => a + p.w * p.h, 0);
-    const util = usedArea / totalArea;
-    const x = pad.left + (chartW / sheets.length) * i + (chartW / sheets.length - barW) / 2;
-
-    // Waste bar (full height)
-    const fullH = (totalArea / maxArea) * chartH;
-    ctx.fillStyle = '#3f3f46';
-    ctx.fillRect(x, pad.top + chartH - fullH, barW, fullH);
-
-    // Used bar
-    const usedH = util * fullH;
-    ctx.fillStyle = util > 0.8 ? '#22c55e' : util > 0.6 ? '#f59e0b' : '#ef4444';
-    ctx.fillRect(x, pad.top + chartH - usedH, barW, usedH);
-
-    // Label
-    ctx.fillStyle = '#a1a1aa';
-    ctx.font = '10px "JetBrains Mono"';
-    ctx.textAlign = 'center';
-    ctx.fillText(`#${i + 1}`, x + barW / 2, H - pad.bottom + 14);
-    ctx.fillStyle = '#f4f4f5';
-    ctx.fillText(`${(util * 100).toFixed(0)}%`, x + barW / 2, pad.top + chartH - usedH - 6);
-  });
-
-  // Y axis
-  ctx.strokeStyle = '#3f3f46';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(pad.left, pad.top);
-  ctx.lineTo(pad.left, pad.top + chartH);
-  ctx.lineTo(W - pad.right, pad.top + chartH);
-  ctx.stroke();
-}
 
 // ============================================================
 // EXPORT
