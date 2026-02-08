@@ -811,7 +811,7 @@ function switchTab(tab) {
       : 'tab-inactive px-4 py-2 font-mono text-xs font-bold transition-colors';
   });
   if (tab === 'optimize') runPrecheck();
-    if (tab === 'results' && state.results) setTimeout(() => drawSheetLayout(), 50);
+    if (tab === 'results' && state.results) setTimeout(() => drawSheetLayout('-results'), 50);
   
 }
 
@@ -1817,9 +1817,10 @@ function bestFitNest(parts, sheets, kerf, unplaced) {
 // ============================================================
 // DRAWING
 // ============================================================
-function drawSheetLayout() {
+function drawSheetLayout(suffix) {
+    const sfx = suffix || '';
   if (!state.results || state.results.sheets.length === 0) return;
-  const canvas = document.getElementById('layout-canvas');
+  const canvas = document.getElementById('layout-canvas' + sfx);
   const ctx = canvas.getContext('2d');
   const dpr = 2;
   const W = canvas.offsetWidth;
@@ -1829,9 +1830,9 @@ function drawSheetLayout() {
   ctx.scale(dpr, dpr);
 
   // Sheet tabs
-  const tabsEl = document.getElementById('sheet-tabs');
+  const tabsEl = document.getElementById('sheet-tabs' + sfx);
   tabsEl.innerHTML = state.results.sheets.map((s, i) => `
-    <button onclick="state.currentSheet=${i}; drawSheetLayout()" class="${i === state.currentSheet ? 'bg-amber-500 text-zinc-900' : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'} text-xs font-mono px-2 py-1 rounded transition-colors">Sheet ${i + 1} \u2014 ${((s.placements.reduce((a,p)=>a+p.w*p.h,0)/(s.length*s.width))*100).toFixed(0)}%</button>
+    <button onclick="state.currentSheet=${i}; drawSheetLayout('${sfx}')" class="${i === state.currentSheet ? 'bg-amber-500 text-zinc-900' : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'} text-xs font-mono px-2 py-1 rounded transition-colors">Sheet ${i + 1} \u2014 ${((s.placements.reduce((a,p)=>a+p.w*p.h,0)/(s.length*s.width))*100).toFixed(0)}%</button>
   `).join('');
 
   const sheet = state.results.sheets[state.currentSheet];
@@ -1906,7 +1907,7 @@ function drawSheetLayout() {
   ctx.fillText(`${sheet.material} | ${sheet.thickness}mm thick | ${sheet.placements.length} parts`, ox, oy + sheet.width * scale + 20);
 
   // Legend
-  const legendEl = document.getElementById('layout-legend');
+  const legendEl = document.getElementById('layout-legend' + sfx);
   legendEl.classList.remove('hidden');
   const uniqueParts = [...new Set(sheet.placements.map(p => p.part.id))];
   legendEl.innerHTML = uniqueParts.map(pid => {
@@ -1916,23 +1917,7 @@ function drawSheetLayout() {
     return `<div class="flex items-center gap-1.5 text-xs font-mono text-zinc-400"><span class="w-3 h-3 rounded" style="background:${color}"></span>${p ? p.name : 'Part'}</div>`;
   }).join('');
 
-    // Mirror to Results tab
-    const rc = document.getElementById('layout-canvas-results');
-    if (rc && rc.offsetWidth > 0) {
-      const rctx = rc.getContext('2d');
-      const rW = rc.offsetWidth;
-      const rH = 500;
-      rc.width = rW * dpr;
-      rc.height = rH * dpr;
-      rctx.drawImage(canvas, 0, 0);
     }
-    const rt = document.getElementById('sheet-tabs-results');
-    if (rt) rt.innerHTML = tabsEl.innerHTML;
-    const rl = document.getElementById('layout-legend-results');
-    const ol = document.getElementById('layout-legend');
-    if (rl && ol) { rl.innerHTML = ol.innerHTML; rl.className = ol.className; }
-    lucide.createIcons();
-}
 
 function drawBeamLayout() {
   if (!state.results || state.results.beams.length === 0) {
