@@ -1,0 +1,1896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wood Cutting Optimizer</title>
+<meta name="description" content="Optimize wood sheet and beam cuts from DXF imports with stock inventory management">
+<meta name="theme-color" content="#f59e0b">
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22Wood%20Cutting%20Optimizer%22%2C%22short_name%22%3A%22CutOptimizer%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%2309090b%22%2C%22theme_color%22%3A%22%23f59e0b%22%7D">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪵</text></svg>">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace']
+      }
+    }
+  }
+}
+</script>
+<style>
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #18181b; }
+  ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; }
+  .tab-active { border-bottom: 2px solid #f59e0b; color: #f59e0b; }
+  .tab-inactive { border-bottom: 2px solid transparent; color: #a1a1aa; }
+  .tab-inactive:hover { color: #f4f4f5; }
+  .drag-over { border-color: #f59e0b !important; background: rgba(245,158,11,0.05) !important; }
+  .stock-row:hover { background: #27272a; }
+  .part-color-0 { fill: #f59e0b; stroke: #d97706; }
+  .part-color-1 { fill: #3b82f6; stroke: #2563eb; }
+  .part-color-2 { fill: #10b981; stroke: #059669; }
+  .part-color-3 { fill: #8b5cf6; stroke: #7c3aed; }
+  .part-color-4 { fill: #ef4444; stroke: #dc2626; }
+  .part-color-5 { fill: #ec4899; stroke: #db2777; }
+  .part-color-6 { fill: #06b6d4; stroke: #0891b2; }
+  .part-color-7 { fill: #84cc16; stroke: #65a30d; }
+  canvas { image-rendering: auto; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in { animation: fadeIn 0.3s ease-out; }
+  .tooltip { position: absolute; background: #18181b; border: 1px solid #3f3f46; border-radius: 8px; padding: 8px 12px; font-size: 12px; pointer-events: none; z-index: 50; white-space: nowrap; }
+</style>
+</head>
+<body class="bg-zinc-950 text-zinc-300 text-sm min-h-screen">
+
+<!-- Header -->
+<header class="sticky top-0 z-40 bg-zinc-900/80 backdrop-blur-sm border-b border-zinc-800">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="flex gap-1.5">
+        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+        <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+      </div>
+      <h1 class="font-mono font-bold text-amber-500 text-lg">Wood Cutting Optimizer</h1>
+      <span class="text-xs px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded font-mono">v1.0</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="exportProject()" class="bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-xs font-mono px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+        <i data-lucide="download" class="w-3.5 h-3.5"></i> Export
+      </button>
+      <button onclick="importProject()" class="bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-xs font-mono px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+        <i data-lucide="upload" class="w-3.5 h-3.5"></i> Import
+      </button>
+      <button onclick="clearAll()" class="text-zinc-400 hover:text-red-400 hover:bg-zinc-800 px-2 py-1.5 rounded-lg transition-colors">
+        <i data-lucide="trash-2" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </div>
+  <!-- Tabs -->
+  <div class="max-w-7xl mx-auto px-4 flex gap-1">
+    <button onclick="switchTab('stock')" id="tab-stock" class="tab-active px-4 py-2 font-mono text-xs font-bold transition-colors">STOCK</button>
+    <button onclick="switchTab('parts')" id="tab-parts" class="tab-inactive px-4 py-2 font-mono text-xs font-bold transition-colors">PARTS</button>
+    <button onclick="switchTab('optimize')" id="tab-optimize" class="tab-inactive px-4 py-2 font-mono text-xs font-bold transition-colors">OPTIMIZE</button>
+    <button onclick="switchTab('results')" id="tab-results" class="tab-inactive px-4 py-2 font-mono text-xs font-bold transition-colors">RESULTS</button>
+  </div>
+</header>
+
+<!-- Main Content -->
+<main class="max-w-7xl mx-auto p-4">
+
+  <!-- ==================== STOCK TAB ==================== -->
+  <div id="panel-stock" class="fade-in">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Sheet Stock -->
+      <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-mono font-bold text-zinc-100 flex items-center gap-2">
+            <i data-lucide="square" class="w-5 h-5 text-amber-500"></i> Plaatmateriaal
+          </h2>
+          <button onclick="toggleSheetForm()" id="btn-toggle-sheet-form" class="bg-amber-500 hover:bg-amber-400 text-zinc-900 font-mono font-bold px-3 py-1.5 text-xs rounded-lg transition-colors flex items-center gap-1">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Plaat Toevoegen
+          </button>
+        </div>
+
+        <!-- Manual Sheet Entry Form -->
+        <div id="sheet-form" class="hidden mb-4 bg-zinc-800/50 border border-zinc-700 rounded-lg p-4 fade-in">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Materiaal</label>
+              <select id="sf-material" onchange="sheetMaterialChanged()" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+                <option value="Multiplex">Multiplex</option>
+                <option value="Underlayment">Underlayment</option>
+                <option value="MDF">MDF</option>
+                <option value="HDF">HDF</option>
+                <option value="Hardboard">Hardboard</option>
+                <option value="Spaanplaat">Spaanplaat</option>
+                <option value="OSB">OSB</option>
+                <option value="Triplex">Triplex</option>
+                <option value="Eiken fineer">Eiken fineer</option>
+                <option value="Beuken fineer">Beuken fineer</option>
+                <option value="Meranti">Meranti</option>
+                <option value="Eiken massief">Eiken massief</option>
+                <option value="Beuken massief">Beuken massief</option>
+                <option value="Walnoot">Walnoot</option>
+                <option value="Essen">Essen</option>
+                <option value="Vuren (plaat)">Vuren (plaat)</option>
+                <option value="Grenen (plaat)">Grenen (plaat)</option>
+                <option value="custom">Anders…</option>
+              </select>
+            </div>
+            <div id="sf-custom-wrap" class="hidden">
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Naam</label>
+              <input id="sf-custom-name" type="text" placeholder="Bijv. Bamboe" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-amber-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Lengte (mm)</label>
+              <input id="sf-length" type="number" value="2440" min="1" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Breedte (mm)</label>
+              <input id="sf-width" type="number" value="1220" min="1" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Dikte (mm)</label>
+              <input id="sf-thickness" type="number" value="18" min="1" step="0.5" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Aantal</label>
+              <input id="sf-qty" type="number" value="1" min="1" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Prijs (€/plaat)</label>
+              <input id="sf-cost" type="number" value="40" min="0" step="0.01" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Nerf/draad</label>
+              <select id="sf-grain" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+                <option value="false">Nee</option>
+                <option value="true">Ja — nerfrichting</option>
+              </select>
+            </div>
+            <div class="flex items-end">
+              <button onclick="submitSheetForm()" class="w-full bg-amber-500 hover:bg-amber-400 text-zinc-900 font-mono font-bold px-3 py-2 rounded-lg transition-colors text-xs">Toevoegen</button>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2 items-center">
+            <span class="text-xs text-zinc-500 font-mono">Standaard maten:</span>
+            <button onclick="fillSheetSize(2440,1220)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2440×1220</button>
+            <button onclick="fillSheetSize(2500,1250)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2500×1250</button>
+            <button onclick="fillSheetSize(2800,2070)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2800×2070</button>
+            <button onclick="fillSheetSize(3050,1525)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">3050×1525</button>
+            <button onclick="fillSheetSize(2440,610)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2440×610</button>
+            <button onclick="fillSheetSize(1220,610)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">1220×610</button>
+            <span class="text-zinc-600 mx-1">|</span>
+            <span class="text-xs text-zinc-500 font-mono">Diktes:</span>
+            <button onclick="document.getElementById('sf-thickness').value=6" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">6</button>
+            <button onclick="document.getElementById('sf-thickness').value=9" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">9</button>
+            <button onclick="document.getElementById('sf-thickness').value=12" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">12</button>
+            <button onclick="document.getElementById('sf-thickness').value=15" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">15</button>
+            <button onclick="document.getElementById('sf-thickness').value=18" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">18</button>
+            <button onclick="document.getElementById('sf-thickness').value=22" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">22</button>
+            <button onclick="document.getElementById('sf-thickness').value=25" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">25</button>
+            <button onclick="document.getElementById('sf-thickness').value=30" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">30</button>
+          </div>
+        </div>
+
+        <!-- Quick presets -->
+        <div class="flex flex-wrap gap-2 mb-4">
+          <span class="text-xs text-zinc-500 font-mono self-center">Snel:</span>
+          <button onclick="addSheetPreset(2440,1220,'Multiplex','18')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">2440×1220 Multiplex 18mm</button>
+          <button onclick="addSheetPreset(2440,1220,'MDF','18')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">2440×1220 MDF 18mm</button>
+          <button onclick="addSheetPreset(2800,2070,'Underlayment','18')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">2800×2070 Underl. 18mm</button>
+          <button onclick="addSheetPreset(2500,1250,'Eiken massief','25')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">2500×1250 Eiken 25mm</button>
+          <button onclick="addSheetPreset(2500,1250,'OSB','18')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">2500×1250 OSB 18mm</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs font-mono">
+            <thead>
+              <tr class="text-zinc-500 border-b border-zinc-700">
+                <th class="text-left py-2 px-2">Materiaal</th>
+                <th class="text-right py-2 px-2">L (mm)</th>
+                <th class="text-right py-2 px-2">B (mm)</th>
+                <th class="text-right py-2 px-2">D (mm)</th>
+                <th class="text-right py-2 px-2">Aantal</th>
+                <th class="text-right py-2 px-2">€</th>
+                <th class="text-center py-2 px-2">Nerf</th>
+                <th class="py-2 px-1"></th>
+              </tr>
+            </thead>
+            <tbody id="sheet-stock-body"></tbody>
+          </table>
+          <div id="sheet-empty" class="text-center py-8 text-zinc-500">
+            <i data-lucide="package-open" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+            <p class="font-mono text-xs">Geen platen op voorraad — voeg toe via het formulier of gebruik snelknoppen</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Beam Stock -->
+      <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-mono font-bold text-zinc-100 flex items-center gap-2">
+            <i data-lucide="minus" class="w-5 h-5 text-amber-500"></i> Balken / Latten
+          </h2>
+          <button onclick="toggleBeamForm()" id="btn-toggle-beam-form" class="bg-amber-500 hover:bg-amber-400 text-zinc-900 font-mono font-bold px-3 py-1.5 text-xs rounded-lg transition-colors flex items-center gap-1">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Balk Toevoegen
+          </button>
+        </div>
+
+        <!-- Manual Beam Entry Form -->
+        <div id="beam-form" class="hidden mb-4 bg-zinc-800/50 border border-zinc-700 rounded-lg p-4 fade-in">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Houtsoort</label>
+              <select id="bf-material" onchange="beamMaterialChanged()" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+                <option value="Vuren">Vuren</option>
+                <option value="Grenen">Grenen</option>
+                <option value="Douglas">Douglas</option>
+                <option value="Lariks">Lariks</option>
+                <option value="Eiken">Eiken</option>
+                <option value="Beuken">Beuken</option>
+                <option value="Meranti">Meranti</option>
+                <option value="Merbau">Merbau</option>
+                <option value="Bangkirai">Bangkirai</option>
+                <option value="Essen">Essen</option>
+                <option value="Walnoot">Walnoot</option>
+                <option value="Iroko">Iroko</option>
+                <option value="Accoya">Accoya</option>
+                <option value="custom">Anders…</option>
+              </select>
+            </div>
+            <div id="bf-custom-wrap" class="hidden">
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Naam</label>
+              <input id="bf-custom-name" type="text" placeholder="Bijv. Teak" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-amber-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Lengte (mm)</label>
+              <input id="bf-length" type="number" value="2400" min="1" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Hoogte (mm)</label>
+              <input id="bf-height" type="number" value="45" min="1" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Breedte (mm)</label>
+              <input id="bf-width" type="number" value="70" min="1" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Aantal</label>
+              <input id="bf-qty" type="number" value="1" min="1" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Prijs (€/stuk)</label>
+              <input id="bf-cost" type="number" value="6" min="0" step="0.01" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+            </div>
+            <div class="flex items-end">
+              <button onclick="submitBeamForm()" class="w-full bg-amber-500 hover:bg-amber-400 text-zinc-900 font-mono font-bold px-3 py-2 rounded-lg transition-colors text-xs">Toevoegen</button>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2 items-center">
+            <span class="text-xs text-zinc-500 font-mono">Gangbare maten (H×B):</span>
+            <button onclick="fillBeamSize(22,50)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">22×50</button>
+            <button onclick="fillBeamSize(32,75)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">32×75</button>
+            <button onclick="fillBeamSize(44,44)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">44×44</button>
+            <button onclick="fillBeamSize(45,70)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">45×70</button>
+            <button onclick="fillBeamSize(45,95)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">45×95</button>
+            <button onclick="fillBeamSize(45,145)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">45×145</button>
+            <button onclick="fillBeamSize(58,58)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">58×58</button>
+            <button onclick="fillBeamSize(63,175)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">63×175</button>
+            <span class="text-zinc-600 mx-1">|</span>
+            <span class="text-xs text-zinc-500 font-mono">Lengtes:</span>
+            <button onclick="document.getElementById('bf-length').value=2100" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2.1m</button>
+            <button onclick="document.getElementById('bf-length').value=2400" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2.4m</button>
+            <button onclick="document.getElementById('bf-length').value=2700" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2.7m</button>
+            <button onclick="document.getElementById('bf-length').value=3000" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">3m</button>
+            <button onclick="document.getElementById('bf-length').value=3600" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">3.6m</button>
+            <button onclick="document.getElementById('bf-length').value=4200" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">4.2m</button>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2 mb-4">
+          <span class="text-xs text-zinc-500 font-mono self-center">Snel:</span>
+          <button onclick="addBeamPreset(2400,45,70,'Vuren')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">45×70 2.4m Vuren</button>
+          <button onclick="addBeamPreset(2400,45,95,'Vuren')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">45×95 2.4m Vuren</button>
+          <button onclick="addBeamPreset(3000,45,145,'Vuren')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">45×145 3m Vuren</button>
+          <button onclick="addBeamPreset(2700,58,58,'Eiken')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">58×58 2.7m Eiken</button>
+          <button onclick="addBeamPreset(2100,22,100,'Grenen')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">22×100 2.1m Grenen</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs font-mono">
+            <thead>
+              <tr class="text-zinc-500 border-b border-zinc-700">
+                <th class="text-left py-2 px-2">Houtsoort</th>
+                <th class="text-right py-2 px-2">L (mm)</th>
+                <th class="text-right py-2 px-2">H (mm)</th>
+                <th class="text-right py-2 px-2">B (mm)</th>
+                <th class="text-right py-2 px-2">Aantal</th>
+                <th class="text-right py-2 px-2">€</th>
+                <th class="py-2 px-1"></th>
+              </tr>
+            </thead>
+            <tbody id="beam-stock-body"></tbody>
+          </table>
+          <div id="beam-empty" class="text-center py-8 text-zinc-500">
+            <i data-lucide="package-open" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+            <p class="font-mono text-xs">Geen balken op voorraad — voeg toe via het formulier of gebruik snelknoppen</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stock Summary -->
+    <div class="mt-6 bg-zinc-900 border border-zinc-700 rounded-lg p-5">
+      <h2 class="font-mono font-bold text-zinc-100 mb-3 flex items-center gap-2">
+        <i data-lucide="bar-chart-3" class="w-5 h-5 text-amber-500"></i> Voorraad Overzicht
+      </h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="stock-summary">
+        <div class="bg-zinc-800 rounded-lg p-3 text-center">
+          <div class="text-xs text-zinc-500 font-mono mb-1">Platen</div>
+          <div class="text-xl font-mono font-bold text-zinc-100" id="sum-sheets">0</div>
+        </div>
+        <div class="bg-zinc-800 rounded-lg p-3 text-center">
+          <div class="text-xs text-zinc-500 font-mono mb-1">Balken</div>
+          <div class="text-xl font-mono font-bold text-zinc-100" id="sum-beams">0</div>
+        </div>
+        <div class="bg-zinc-800 rounded-lg p-3 text-center">
+          <div class="text-xs text-zinc-500 font-mono mb-1">Plaat Oppervlak</div>
+          <div class="text-xl font-mono font-bold text-zinc-100" id="sum-sheet-area">0 m²</div>
+        </div>
+        <div class="bg-zinc-800 rounded-lg p-3 text-center">
+          <div class="text-xs text-zinc-500 font-mono mb-1">Totale Waarde</div>
+          <div class="text-xl font-mono font-bold text-amber-500" id="sum-value">€0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PARTS TAB ==================== -->
+  <div id="panel-parts" class="hidden fade-in">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- DXF Upload + Manual Add -->
+      <div class="lg:col-span-1 space-y-4">
+        <!-- DXF Upload -->
+        <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-5">
+          <h2 class="font-mono font-bold text-zinc-100 mb-3 flex items-center gap-2">
+            <i data-lucide="file-up" class="w-5 h-5 text-amber-500"></i> Import DXF
+          </h2>
+          <div id="dxf-drop" class="border-2 border-dashed border-zinc-700 rounded-lg p-6 text-center cursor-pointer hover:border-amber-500/50 transition-colors"
+               ondragover="event.preventDefault(); this.classList.add('drag-over')"
+               ondragleave="this.classList.remove('drag-over')"
+               ondrop="handleDXFDrop(event); this.classList.remove('drag-over')"
+               onclick="document.getElementById('dxf-input').click()">
+            <i data-lucide="upload-cloud" class="w-10 h-10 mx-auto mb-2 text-zinc-500"></i>
+            <p class="text-zinc-400 font-mono text-xs mb-1">Drop DXF file here or click to browse</p>
+            <p class="text-zinc-600 text-xs">Supports LINE, LWPOLYLINE, CIRCLE, ARC, POLYLINE entities</p>
+            <input type="file" id="dxf-input" accept=".dxf" class="hidden" onchange="handleDXFFile(this.files[0])">
+          </div>
+          <div id="dxf-status" class="mt-3 hidden">
+            <div class="flex items-center gap-2 text-xs font-mono">
+              <i data-lucide="check-circle" class="w-4 h-4 text-green-400"></i>
+              <span id="dxf-status-text" class="text-green-400"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Manual Part Entry -->
+        <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-5">
+          <h2 class="font-mono font-bold text-zinc-100 mb-3 flex items-center gap-2">
+            <i data-lucide="plus-square" class="w-5 h-5 text-amber-500"></i> Add Part Manually
+          </h2>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Part Name</label>
+              <input id="part-name" type="text" placeholder="e.g. Side Panel" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-amber-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Shape</label>
+              <select id="part-shape" onchange="updatePartFields()" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+                <option value="rect">Rectangle</option>
+                <option value="circle">Circle</option>
+                <option value="lshape">L-Shape</option>
+              </select>
+            </div>
+            <div id="rect-fields">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-xs text-zinc-500 font-mono block mb-1">Length (mm)</label>
+                  <input id="part-length" type="number" value="400" min="1" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="text-xs text-zinc-500 font-mono block mb-1">Width (mm)</label>
+                  <input id="part-width" type="number" value="300" min="1" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+                </div>
+              </div>
+            </div>
+            <div id="circle-fields" class="hidden">
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Diameter (mm)</label>
+              <input id="part-diameter" type="number" value="200" min="1" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+            </div>
+            <div id="lshape-fields" class="hidden">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-xs text-zinc-500 font-mono block mb-1">Outer L (mm)</label>
+                  <input id="part-l-outer-l" type="number" value="400" min="1" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="text-xs text-zinc-500 font-mono block mb-1">Outer W (mm)</label>
+                  <input id="part-l-outer-w" type="number" value="400" min="1" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="text-xs text-zinc-500 font-mono block mb-1">Leg Width (mm)</label>
+                  <input id="part-l-leg" type="number" value="100" min="1" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-xs text-zinc-500 font-mono block mb-1">Quantity</label>
+                <input id="part-qty" type="number" value="1" min="1" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="text-xs text-zinc-500 font-mono block mb-1">Cut Type</label>
+                <select id="part-cut-type" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+                  <option value="sheet">From Sheet</option>
+                  <option value="beam">From Beam (1D)</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Rotation Allowed</label>
+              <select id="part-rotation" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+                <option value="any">Any (0°/90°/180°/270°)</option>
+                <option value="90">90° increments only</option>
+                <option value="none">No rotation (grain-sensitive)</option>
+              </select>
+            </div>
+            <button onclick="addPartManual()" class="w-full bg-amber-500 hover:bg-amber-400 text-zinc-900 font-mono font-bold px-4 py-2.5 rounded-lg transition-colors">
+              Add Part
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Parts List -->
+      <div class="lg:col-span-2">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-mono font-bold text-zinc-100 flex items-center gap-2">
+              <i data-lucide="layers" class="w-5 h-5 text-amber-500"></i> Parts List
+              <span class="text-xs px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded font-mono" id="parts-count">0 parts</span>
+            </h2>
+            <div class="flex gap-2">
+              <button onclick="loadExampleParts('cabinet')" class="bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-xs font-mono px-3 py-1.5 rounded-lg transition-colors">Cabinet Example</button>
+              <button onclick="loadExampleParts('shelf')" class="bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-xs font-mono px-3 py-1.5 rounded-lg transition-colors">Bookshelf Example</button>
+              <button onclick="clearParts()" class="text-zinc-400 hover:text-red-400 hover:bg-zinc-800 px-2 py-1.5 rounded-lg transition-colors text-xs font-mono">Clear</button>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs font-mono">
+              <thead>
+                <tr class="text-zinc-500 border-b border-zinc-700">
+                  <th class="text-left py-2 px-2">#</th>
+                  <th class="text-left py-2 px-2">Name</th>
+                  <th class="text-left py-2 px-2">Shape</th>
+                  <th class="text-right py-2 px-2">Dimensions</th>
+                  <th class="text-right py-2 px-2">Area</th>
+                  <th class="text-right py-2 px-2">Qty</th>
+                  <th class="text-center py-2 px-2">Source</th>
+                  <th class="text-center py-2 px-2">Rotate</th>
+                  <th class="py-2 px-1"></th>
+                </tr>
+              </thead>
+              <tbody id="parts-body"></tbody>
+            </table>
+            <div id="parts-empty" class="text-center py-12 text-zinc-500">
+              <i data-lucide="puzzle" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
+              <p class="font-mono text-xs mb-1">No parts added yet</p>
+              <p class="text-zinc-600 text-xs">Add parts manually, import a DXF, or load an example</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- DXF Preview -->
+        <div id="dxf-preview-card" class="hidden mt-4 bg-zinc-900 border border-zinc-700 rounded-lg p-5">
+          <h2 class="font-mono font-bold text-zinc-100 mb-3 flex items-center gap-2">
+            <i data-lucide="scan" class="w-5 h-5 text-amber-500"></i> DXF Preview
+          </h2>
+          <canvas id="dxf-preview-canvas" class="w-full bg-zinc-800 rounded-lg border border-zinc-700" height="300"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== OPTIMIZE TAB ==================== -->
+  <div id="panel-optimize" class="hidden fade-in">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Settings -->
+      <div class="space-y-4">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-5">
+          <h2 class="font-mono font-bold text-zinc-100 mb-4 flex items-center gap-2">
+            <i data-lucide="settings" class="w-5 h-5 text-amber-500"></i> Optimization Settings
+          </h2>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Blade Kerf (mm)</label>
+              <input id="opt-kerf" type="number" value="3.2" step="0.1" min="0" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+              <p class="text-xs text-zinc-600 mt-1">Typical: 3.2 mm (tafelzaag), 0.2 mm (laser)</p>
+            </div>
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Edge Margin (mm)</label>
+              <input id="opt-margin" type="number" value="10" step="1" min="0" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Algorithm</label>
+              <select id="opt-algorithm" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+                <option value="guillotine">Guillotine (straight cuts only)</option>
+                <option value="shelf">Shelf / NFDH</option>
+                <option value="bestfit">Best Fit Decreasing</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Sort Strategy</label>
+              <select id="opt-sort" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
+                <option value="area">Largest area first</option>
+                <option value="height">Tallest first</option>
+                <option value="width">Widest first</option>
+                <option value="perimeter">Largest perimeter first</option>
+              </select>
+            </div>
+            <div class="flex items-center justify-between">
+              <label class="text-xs text-zinc-500 font-mono">Respect grain direction</label>
+              <button id="opt-grain-toggle" onclick="toggleGrain()" class="w-8 h-5 rounded-full bg-zinc-700 relative transition-all">
+                <div class="w-4 h-4 rounded-full bg-white absolute top-0.5 left-0.5 transition-all"></div>
+              </button>
+            </div>
+            <div class="flex items-center justify-between">
+              <label class="text-xs text-zinc-500 font-mono">Allow rotation</label>
+              <button id="opt-rotate-toggle" onclick="toggleRotate()" class="w-8 h-5 rounded-full bg-amber-500 relative transition-all">
+                <div class="w-4 h-4 rounded-full bg-white absolute top-0.5 left-3.5 transition-all"></div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pre-check -->
+        <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-5">
+          <h2 class="font-mono font-bold text-zinc-100 mb-3 flex items-center gap-2">
+            <i data-lucide="check-square" class="w-5 h-5 text-amber-500"></i> Pre-Check
+          </h2>
+          <div id="precheck-results" class="space-y-2 text-xs font-mono">
+            <div class="flex items-center gap-2 text-zinc-500">
+              <i data-lucide="info" class="w-3.5 h-3.5"></i>
+              <span>Add stock and parts, then run optimization</span>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="runOptimization()" class="w-full bg-amber-500 hover:bg-amber-400 text-zinc-900 font-mono font-bold px-4 py-3 rounded-lg transition-colors text-base flex items-center justify-center gap-2">
+          <i data-lucide="zap" class="w-5 h-5"></i> Run Optimization
+        </button>
+      </div>
+
+      <!-- Optimization Preview -->
+      <div class="lg:col-span-2">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-mono font-bold text-zinc-100 flex items-center gap-2">
+              <i data-lucide="layout" class="w-5 h-5 text-amber-500"></i> Cut Layout Preview
+            </h2>
+            <div id="sheet-tabs" class="flex gap-1"></div>
+          </div>
+          <div class="relative">
+            <canvas id="layout-canvas" class="w-full bg-zinc-800 rounded-lg border border-zinc-700" height="500"></canvas>
+            <div id="layout-tooltip" class="tooltip hidden"></div>
+          </div>
+          <div id="layout-legend" class="mt-3 flex flex-wrap gap-3 hidden"></div>
+        </div>
+
+        <!-- Beam cuts preview -->
+        <div id="beam-cuts-card" class="hidden mt-4 bg-zinc-900 border border-zinc-700 rounded-lg p-5">
+          <h2 class="font-mono font-bold text-zinc-100 mb-3 flex items-center gap-2">
+            <i data-lucide="ruler" class="w-5 h-5 text-amber-500"></i> Beam Cut Layout
+          </h2>
+          <canvas id="beam-canvas" class="w-full bg-zinc-800 rounded-lg border border-zinc-700" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== RESULTS TAB ==================== -->
+  <div id="panel-results" class="hidden fade-in">
+    <div id="no-results" class="text-center py-16 text-zinc-500">
+      <i data-lucide="bar-chart" class="w-16 h-16 mx-auto mb-4 opacity-30"></i>
+      <p class="font-mono text-sm mb-2">No optimization results yet</p>
+      <p class="text-xs text-zinc-600">Run the optimizer first to see results here</p>
+    </div>
+    <div id="results-content" class="hidden space-y-6">
+      <!-- Summary Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 text-center">
+          <div class="text-xs text-zinc-500 font-mono mb-1">Material Utilization</div>
+          <div class="text-2xl font-mono font-bold text-green-400" id="res-util">0%</div>
+        </div>
+        <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 text-center">
+          <div class="text-xs text-zinc-500 font-mono mb-1">Waste</div>
+          <div class="text-2xl font-mono font-bold text-red-400" id="res-waste">0%</div>
+        </div>
+        <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 text-center">
+          <div class="text-xs text-zinc-500 font-mono mb-1">Sheets Used</div>
+          <div class="text-2xl font-mono font-bold text-zinc-100" id="res-sheets-used">0</div>
+        </div>
+        <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 text-center">
+          <div class="text-xs text-zinc-500 font-mono mb-1">Est. Cost</div>
+          <div class="text-2xl font-mono font-bold text-amber-500" id="res-cost">€0</div>
+        </div>
+      </div>
+
+      <!-- Detailed Stats -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-5">
+          <h2 class="font-mono font-bold text-zinc-100 mb-3">Sheet Utilization Breakdown</h2>
+          <canvas id="util-chart" height="250"></canvas>
+        </div>
+        <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-5">
+          <h2 class="font-mono font-bold text-zinc-100 mb-3">Cut List</h2>
+          <div class="overflow-y-auto max-h-64">
+            <table class="w-full text-xs font-mono">
+              <thead>
+                <tr class="text-zinc-500 border-b border-zinc-700">
+                  <th class="text-left py-2 px-2">Part</th>
+                  <th class="text-right py-2 px-2">Size</th>
+                  <th class="text-center py-2 px-2">Sheet #</th>
+                  <th class="text-right py-2 px-2">Position</th>
+                  <th class="text-center py-2 px-2">Rotated</th>
+                </tr>
+              </thead>
+              <tbody id="cutlist-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Offcuts -->
+      <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-5">
+        <h2 class="font-mono font-bold text-zinc-100 mb-3 flex items-center gap-2">
+          <i data-lucide="scissors" class="w-5 h-5 text-amber-500"></i> Usable Offcuts
+        </h2>
+        <div id="offcuts-list" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+      </div>
+
+      <!-- Export -->
+      <div class="flex gap-3 justify-end">
+        <button onclick="exportCutListCSV()" class="bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-xs font-mono px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5">
+          <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Export CSV
+        </button>
+        <button onclick="exportLayoutSVG()" class="bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-xs font-mono px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5">
+          <i data-lucide="image" class="w-3.5 h-3.5"></i> Export SVG
+        </button>
+        <button onclick="printResults()" class="bg-amber-500 hover:bg-amber-400 text-zinc-900 font-mono font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5">
+          <i data-lucide="printer" class="w-3.5 h-3.5"></i> Print Cut Sheet
+        </button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-6 right-6 z-50 hidden">
+  <div class="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 shadow-lg shadow-black/30 flex items-center gap-2">
+    <i data-lucide="check-circle" class="w-4 h-4 text-green-400"></i>
+    <span id="toast-msg" class="text-xs font-mono text-zinc-300"></span>
+  </div>
+</div>
+
+<input type="file" id="import-input" accept=".json" class="hidden" onchange="handleImportProject(this.files[0])">
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  sheets: [],
+  beams: [],
+  parts: [],
+  results: null,
+  currentSheet: 0,
+  optGrain: false,
+  optRotate: true
+};
+
+const PART_COLORS = ['#f59e0b','#3b82f6','#10b981','#8b5cf6','#ef4444','#ec4899','#06b6d4','#84cc16','#f97316','#a855f7','#14b8a6','#e11d48'];
+
+let nextSheetId = 1, nextBeamId = 1, nextPartId = 1;
+
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(tab) {
+  ['stock','parts','optimize','results'].forEach(t => {
+    document.getElementById('panel-' + t).classList.toggle('hidden', t !== tab);
+    const btn = document.getElementById('tab-' + t);
+    btn.className = t === tab
+      ? 'tab-active px-4 py-2 font-mono text-xs font-bold transition-colors'
+      : 'tab-inactive px-4 py-2 font-mono text-xs font-bold transition-colors';
+  });
+  if (tab === 'optimize') runPrecheck();
+  if (tab === 'results' && state.results) drawUtilChart();
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 2500);
+}
+
+// ============================================================
+// SHEET STOCK
+// ============================================================
+function toggleSheetForm() {
+  const f = document.getElementById('sheet-form');
+  f.classList.toggle('hidden');
+}
+function sheetMaterialChanged() {
+  const v = document.getElementById('sf-material').value;
+  document.getElementById('sf-custom-wrap').classList.toggle('hidden', v !== 'custom');
+  // Auto-set grain for solid wood types
+  const grainMaterials = ['Eiken massief','Beuken massief','Walnoot','Essen','Meranti','Eiken fineer','Beuken fineer','Vuren (plaat)','Grenen (plaat)'];
+  document.getElementById('sf-grain').value = grainMaterials.includes(v) ? 'true' : 'false';
+}
+function fillSheetSize(l, w) {
+  document.getElementById('sf-length').value = l;
+  document.getElementById('sf-width').value = w;
+}
+function submitSheetForm() {
+  let mat = document.getElementById('sf-material').value;
+  if (mat === 'custom') {
+    mat = document.getElementById('sf-custom-name').value.trim();
+    if (!mat) { showToast('Vul een materiaalnaam in'); return; }
+  }
+  const l = parseFloat(document.getElementById('sf-length').value) || 2440;
+  const w = parseFloat(document.getElementById('sf-width').value) || 1220;
+  const t = parseFloat(document.getElementById('sf-thickness').value) || 18;
+  const qty = parseInt(document.getElementById('sf-qty').value) || 1;
+  const cost = parseFloat(document.getElementById('sf-cost').value) || 0;
+  const grain = document.getElementById('sf-grain').value === 'true';
+  state.sheets.push({ id: nextSheetId++, material: mat, length: l, width: w, thickness: t, qty, cost, grain });
+  renderSheets();
+  showToast(`${qty}× ${mat} ${l}×${w}×${t}mm toegevoegd`);
+}
+function addSheet() {
+  toggleSheetForm();
+}
+function addSheetPreset(l, w, mat, t) {
+  const grainMats = ['Eiken massief','Beuken massief','Walnoot','Essen','Meranti','Eiken fineer','Beuken fineer','Multiplex','Underlayment'];
+  state.sheets.push({ id: nextSheetId++, material: mat, length: l, width: w, thickness: parseFloat(t), qty: 1, cost: mat === 'Eiken massief' ? 95 : mat === 'Beuken massief' ? 80 : mat === 'Walnoot' ? 120 : mat === 'Multiplex' ? 55 : mat === 'Underlayment' ? 45 : mat === 'MDF' ? 30 : mat === 'OSB' ? 22 : 40, grain: grainMats.includes(mat) });
+  renderSheets();
+  showToast(`${mat} ${l}×${w}mm toegevoegd`);
+}
+function removeSheet(id) {
+  state.sheets = state.sheets.filter(s => s.id !== id);
+  renderSheets();
+}
+function renderSheets() {
+  const body = document.getElementById('sheet-stock-body');
+  const empty = document.getElementById('sheet-empty');
+  if (state.sheets.length === 0) { body.innerHTML = ''; empty.classList.remove('hidden'); updateSummary(); return; }
+  empty.classList.add('hidden');
+  body.innerHTML = state.sheets.map(s => `
+    <tr class="stock-row border-b border-zinc-800 transition-colors">
+      <td class="py-2 px-2"><input type="text" value="${s.material}" onchange="updateSheet(${s.id},'material',this.value)" class="bg-transparent border-none text-zinc-100 w-20 focus:outline-none font-mono text-xs"></td>
+      <td class="py-2 px-2 text-right"><input type="number" value="${s.length}" onchange="updateSheet(${s.id},'length',+this.value)" class="bg-transparent border-none text-zinc-100 w-16 text-right focus:outline-none font-mono text-xs"></td>
+      <td class="py-2 px-2 text-right"><input type="number" value="${s.width}" onchange="updateSheet(${s.id},'width',+this.value)" class="bg-transparent border-none text-zinc-100 w-16 text-right focus:outline-none font-mono text-xs"></td>
+      <td class="py-2 px-2 text-right"><input type="number" value="${s.thickness}" onchange="updateSheet(${s.id},'thickness',+this.value)" class="bg-transparent border-none text-zinc-100 w-12 text-right focus:outline-none font-mono text-xs"></td>
+      <td class="py-2 px-2 text-right"><input type="number" value="${s.qty}" min="1" onchange="updateSheet(${s.id},'qty',+this.value)" class="bg-transparent border-none text-zinc-100 w-10 text-right focus:outline-none font-mono text-xs"></td>
+      <td class="py-2 px-2 text-right"><input type="number" value="${s.cost}" step="0.01" onchange="updateSheet(${s.id},'cost',+this.value)" class="bg-transparent border-none text-amber-400 w-14 text-right focus:outline-none font-mono text-xs"></td>
+      <td class="py-2 px-2 text-center"><span class="text-xs ${s.grain ? 'text-amber-400' : 'text-zinc-600'} cursor-pointer" onclick="toggleSheetGrain(${s.id})">${s.grain ? '→ JA' : 'nee'}</span></td>
+      <td class="py-2 px-1"><button onclick="removeSheet(${s.id})" class="text-zinc-500 hover:text-red-400 transition-colors"><i data-lucide="x" class="w-3.5 h-3.5"></i></button></td>
+    </tr>
+  `).join('');
+  lucide.createIcons();
+  updateSummary();
+}
+function updateSheet(id, field, val) {
+  const s = state.sheets.find(s => s.id === id);
+  if (s) s[field] = val;
+  updateSummary();
+}
+function toggleSheetGrain(id) {
+  const s = state.sheets.find(s => s.id === id);
+  if (s) { s.grain = !s.grain; renderSheets(); }
+}
+
+// ============================================================
+// BEAM STOCK
+// ============================================================
+function toggleBeamForm() {
+  const f = document.getElementById('beam-form');
+  f.classList.toggle('hidden');
+}
+function beamMaterialChanged() {
+  const v = document.getElementById('bf-material').value;
+  document.getElementById('bf-custom-wrap').classList.toggle('hidden', v !== 'custom');
+}
+function fillBeamSize(h, w) {
+  document.getElementById('bf-height').value = h;
+  document.getElementById('bf-width').value = w;
+}
+function submitBeamForm() {
+  let mat = document.getElementById('bf-material').value;
+  if (mat === 'custom') {
+    mat = document.getElementById('bf-custom-name').value.trim();
+    if (!mat) { showToast('Vul een houtsoortnaam in'); return; }
+  }
+  const l = parseFloat(document.getElementById('bf-length').value) || 2400;
+  const h = parseFloat(document.getElementById('bf-height').value) || 45;
+  const w = parseFloat(document.getElementById('bf-width').value) || 70;
+  const qty = parseInt(document.getElementById('bf-qty').value) || 1;
+  const cost = parseFloat(document.getElementById('bf-cost').value) || 0;
+  state.beams.push({ id: nextBeamId++, material: mat, length: l, height: h, width: w, qty, cost });
+  renderBeams();
+  showToast(`${qty}× ${mat} ${h}×${w}×${l}mm toegevoegd`);
+}
+function addBeam() {
+  toggleBeamForm();
+}
+function addBeamPreset(l, h, w, mat) {
+  const hardwoods = ['Eiken','Beuken','Meranti','Merbau','Bangkirai','Walnoot','Essen','Iroko','Accoya'];
+  state.beams.push({ id: nextBeamId++, material: mat, length: l, height: h, width: w, qty: 1, cost: hardwoods.includes(mat) ? 18 : mat === 'Grenen' ? 4 : mat === 'Douglas' ? 8 : 6 });
+  renderBeams();
+  showToast(`${mat} ${h}×${w}×${l}mm toegevoegd`);
+}
+function removeBeam(id) {
+  state.beams = state.beams.filter(b => b.id !== id);
+  renderBeams();
+}
+function renderBeams() {
+  const body = document.getElementById('beam-stock-body');
+  const empty = document.getElementById('beam-empty');
+  if (state.beams.length === 0) { body.innerHTML = ''; empty.classList.remove('hidden'); updateSummary(); return; }
+  empty.classList.add('hidden');
+  body.innerHTML = state.beams.map(b => `
+    <tr class="stock-row border-b border-zinc-800 transition-colors">
+      <td class="py-2 px-2"><input type="text" value="${b.material}" onchange="updateBeam(${b.id},'material',this.value)" class="bg-transparent border-none text-zinc-100 w-20 focus:outline-none font-mono text-xs"></td>
+      <td class="py-2 px-2 text-right"><input type="number" value="${b.length}" onchange="updateBeam(${b.id},'length',+this.value)" class="bg-transparent border-none text-zinc-100 w-16 text-right focus:outline-none font-mono text-xs"></td>
+      <td class="py-2 px-2 text-right"><input type="number" value="${b.height}" onchange="updateBeam(${b.id},'height',+this.value)" class="bg-transparent border-none text-zinc-100 w-14 text-right focus:outline-none font-mono text-xs"></td>
+      <td class="py-2 px-2 text-right"><input type="number" value="${b.width}" onchange="updateBeam(${b.id},'width',+this.value)" class="bg-transparent border-none text-zinc-100 w-14 text-right focus:outline-none font-mono text-xs"></td>
+      <td class="py-2 px-2 text-right"><input type="number" value="${b.qty}" min="1" onchange="updateBeam(${b.id},'qty',+this.value)" class="bg-transparent border-none text-zinc-100 w-10 text-right focus:outline-none font-mono text-xs"></td>
+      <td class="py-2 px-2 text-right"><input type="number" value="${b.cost}" step="0.01" onchange="updateBeam(${b.id},'cost',+this.value)" class="bg-transparent border-none text-amber-400 w-14 text-right focus:outline-none font-mono text-xs"></td>
+      <td class="py-2 px-1"><button onclick="removeBeam(${b.id})" class="text-zinc-500 hover:text-red-400 transition-colors"><i data-lucide="x" class="w-3.5 h-3.5"></i></button></td>
+    </tr>
+  `).join('');
+  lucide.createIcons();
+  updateSummary();
+}
+function updateBeam(id, field, val) {
+  const b = state.beams.find(b => b.id === id);
+  if (b) b[field] = val;
+  updateSummary();
+}
+
+// ============================================================
+// SUMMARY
+// ============================================================
+function updateSummary() {
+  const totalSheets = state.sheets.reduce((a, s) => a + s.qty, 0);
+  const totalBeams = state.beams.reduce((a, b) => a + b.qty, 0);
+  const sheetArea = state.sheets.reduce((a, s) => a + (s.length * s.width * s.qty) / 1e6, 0);
+  const sheetVal = state.sheets.reduce((a, s) => a + s.cost * s.qty, 0);
+  const beamVal = state.beams.reduce((a, b) => a + b.cost * b.qty, 0);
+  document.getElementById('sum-sheets').textContent = totalSheets;
+  document.getElementById('sum-beams').textContent = totalBeams;
+  document.getElementById('sum-sheet-area').textContent = sheetArea.toFixed(2) + ' m²';
+  document.getElementById('sum-value').textContent = '€' + (sheetVal + beamVal).toFixed(2);
+}
+
+// ============================================================
+// PARTS
+// ============================================================
+function updatePartFields() {
+  const shape = document.getElementById('part-shape').value;
+  document.getElementById('rect-fields').classList.toggle('hidden', shape !== 'rect');
+  document.getElementById('circle-fields').classList.toggle('hidden', shape !== 'circle');
+  document.getElementById('lshape-fields').classList.toggle('hidden', shape !== 'lshape');
+}
+
+function addPartManual() {
+  const name = document.getElementById('part-name').value || 'Part ' + nextPartId;
+  const shape = document.getElementById('part-shape').value;
+  const qty = parseInt(document.getElementById('part-qty').value) || 1;
+  const cutType = document.getElementById('part-cut-type').value;
+  const rotation = document.getElementById('part-rotation').value;
+  let part = { id: nextPartId++, name, shape, qty, cutType, rotation, source: 'manual' };
+
+  if (shape === 'rect') {
+    part.length = parseFloat(document.getElementById('part-length').value) || 400;
+    part.width = parseFloat(document.getElementById('part-width').value) || 300;
+    part.area = part.length * part.width;
+    part.boundW = part.length;
+    part.boundH = part.width;
+  } else if (shape === 'circle') {
+    part.diameter = parseFloat(document.getElementById('part-diameter').value) || 200;
+    part.area = Math.PI * (part.diameter / 2) ** 2;
+    part.boundW = part.diameter;
+    part.boundH = part.diameter;
+  } else if (shape === 'lshape') {
+    part.outerL = parseFloat(document.getElementById('part-l-outer-l').value) || 400;
+    part.outerW = parseFloat(document.getElementById('part-l-outer-w').value) || 400;
+    part.leg = parseFloat(document.getElementById('part-l-leg').value) || 100;
+    part.area = part.outerL * part.leg + (part.outerW - part.leg) * part.leg;
+    part.boundW = part.outerL;
+    part.boundH = part.outerW;
+  }
+
+  state.parts.push(part);
+  renderParts();
+  showToast(`Added ${qty}× ${name}`);
+}
+
+function removePart(id) {
+  state.parts = state.parts.filter(p => p.id !== id);
+  renderParts();
+}
+
+function renderParts() {
+  const body = document.getElementById('parts-body');
+  const empty = document.getElementById('parts-empty');
+  document.getElementById('parts-count').textContent = state.parts.reduce((a,p) => a + p.qty, 0) + ' parts';
+
+  if (state.parts.length === 0) { body.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+
+  body.innerHTML = state.parts.map((p, i) => {
+    const color = PART_COLORS[i % PART_COLORS.length];
+    let dims = '';
+    if (p.shape === 'rect') dims = `${p.length}×${p.width} mm`;
+    else if (p.shape === 'circle') dims = `⌀${p.diameter} mm`;
+    else if (p.shape === 'lshape') dims = `L: ${p.outerL}×${p.outerW}, leg ${p.leg}mm`;
+    else dims = `${p.boundW.toFixed(0)}×${p.boundH.toFixed(0)} mm`;
+    return `
+      <tr class="stock-row border-b border-zinc-800 transition-colors">
+        <td class="py-2 px-2"><span class="inline-block w-3 h-3 rounded" style="background:${color}"></span></td>
+        <td class="py-2 px-2 text-zinc-100">${p.name}</td>
+        <td class="py-2 px-2"><span class="text-xs px-1.5 py-0.5 bg-zinc-800 rounded text-zinc-400">${p.shape}</span></td>
+        <td class="py-2 px-2 text-right text-zinc-300">${dims}</td>
+        <td class="py-2 px-2 text-right text-zinc-400">${(p.area / 100).toFixed(1)} cm²</td>
+        <td class="py-2 px-2 text-right text-zinc-100">${p.qty}</td>
+        <td class="py-2 px-2 text-center"><span class="text-xs px-1.5 py-0.5 ${p.cutType === 'sheet' ? 'bg-amber-500/10 text-amber-400' : 'bg-blue-500/10 text-blue-400'} rounded">${p.cutType}</span></td>
+        <td class="py-2 px-2 text-center text-zinc-500">${p.rotation === 'any' ? '0-270°' : p.rotation === '90' ? '90°' : 'fixed'}</td>
+        <td class="py-2 px-1"><button onclick="removePart(${p.id})" class="text-zinc-500 hover:text-red-400 transition-colors"><i data-lucide="x" class="w-3.5 h-3.5"></i></button></td>
+      </tr>
+    `;
+  }).join('');
+  lucide.createIcons();
+}
+
+function clearParts() {
+  state.parts = [];
+  renderParts();
+}
+
+// ============================================================
+// EXAMPLE PARTS
+// ============================================================
+function loadExampleParts(type) {
+  if (type === 'cabinet') {
+    state.parts = [
+      { id: nextPartId++, name: 'Side Panel', shape: 'rect', length: 700, width: 400, qty: 2, cutType: 'sheet', rotation: 'none', source: 'manual', area: 280000, boundW: 700, boundH: 400 },
+      { id: nextPartId++, name: 'Top/Bottom', shape: 'rect', length: 500, width: 400, qty: 2, cutType: 'sheet', rotation: 'none', source: 'manual', area: 200000, boundW: 500, boundH: 400 },
+      { id: nextPartId++, name: 'Back Panel', shape: 'rect', length: 700, width: 500, qty: 1, cutType: 'sheet', rotation: 'any', source: 'manual', area: 350000, boundW: 700, boundH: 500 },
+      { id: nextPartId++, name: 'Shelf', shape: 'rect', length: 468, width: 380, qty: 2, cutType: 'sheet', rotation: 'any', source: 'manual', area: 177840, boundW: 468, boundH: 380 },
+      { id: nextPartId++, name: 'Door', shape: 'rect', length: 690, width: 250, qty: 2, cutType: 'sheet', rotation: 'none', source: 'manual', area: 172500, boundW: 690, boundH: 250 },
+      { id: nextPartId++, name: 'Kick Plate', shape: 'rect', length: 500, width: 80, qty: 1, cutType: 'sheet', rotation: 'any', source: 'manual', area: 40000, boundW: 500, boundH: 80 },
+    ];
+    if (state.sheets.length === 0) addSheetPreset(2440, 1220, 'Plywood', '18');
+  } else if (type === 'shelf') {
+    state.parts = [
+      { id: nextPartId++, name: 'Upright', shape: 'rect', length: 1800, width: 300, qty: 2, cutType: 'sheet', rotation: 'none', source: 'manual', area: 540000, boundW: 1800, boundH: 300 },
+      { id: nextPartId++, name: 'Shelf Board', shape: 'rect', length: 800, width: 300, qty: 5, cutType: 'sheet', rotation: 'any', source: 'manual', area: 240000, boundW: 800, boundH: 300 },
+      { id: nextPartId++, name: 'Top Cap', shape: 'rect', length: 860, width: 320, qty: 1, cutType: 'sheet', rotation: 'any', source: 'manual', area: 275200, boundW: 860, boundH: 320 },
+      { id: nextPartId++, name: 'Back Brace', shape: 'rect', length: 760, width: 100, qty: 2, cutType: 'sheet', rotation: 'any', source: 'manual', area: 76000, boundW: 760, boundH: 100 },
+    ];
+    if (state.sheets.length === 0) addSheetPreset(2440, 1220, 'Plywood', '18');
+  }
+  renderParts();
+  showToast(`Loaded ${type} example`);
+}
+
+// ============================================================
+// DXF PARSER
+// ============================================================
+function handleDXFDrop(e) {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file) handleDXFFile(file);
+}
+
+function handleDXFFile(file) {
+  if (!file || !file.name.toLowerCase().endsWith('.dxf')) {
+    showToast('Please upload a .dxf file');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const entities = parseDXF(e.target.result);
+      if (entities.length === 0) { showToast('No usable entities found in DXF'); return; }
+      const groups = groupEntitiesIntoParts(entities);
+      groups.forEach(g => {
+        const minX = Math.min(...g.points.map(p => p[0]));
+        const maxX = Math.max(...g.points.map(p => p[0]));
+        const minY = Math.min(...g.points.map(p => p[1]));
+        const maxY = Math.max(...g.points.map(p => p[1]));
+        const w = maxX - minX;
+        const h = maxY - minY;
+        if (w > 1 && h > 1) {
+          state.parts.push({
+            id: nextPartId++,
+            name: g.name || `DXF Part ${nextPartId - 1}`,
+            shape: 'rect',
+            length: Math.round(w * 10) / 10,
+            width: Math.round(h * 10) / 10,
+            qty: 1,
+            cutType: 'sheet',
+            rotation: 'any',
+            source: 'dxf',
+            area: w * h,
+            boundW: w,
+            boundH: h,
+            dxfEntities: g.entities
+          });
+        }
+      });
+      renderParts();
+      drawDXFPreview(entities);
+      const status = document.getElementById('dxf-status');
+      status.classList.remove('hidden');
+      document.getElementById('dxf-status-text').textContent = `Parsed ${entities.length} entities → ${groups.length} parts from ${file.name}`;
+      showToast(`Imported ${groups.length} parts from DXF`);
+    } catch (err) {
+      showToast('Error parsing DXF: ' + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseDXF(text) {
+  const lines = text.split(/\r?\n/);
+  const entities = [];
+  let i = 0;
+  // Find ENTITIES section
+  while (i < lines.length && lines[i].trim() !== 'ENTITIES') i++;
+  i++;
+  while (i < lines.length) {
+    const code = parseInt(lines[i].trim());
+    const val = (i + 1 < lines.length) ? lines[i + 1].trim() : '';
+    if (code === 0 && val === 'ENDSEC') break;
+    if (code === 0) {
+      const etype = val;
+      i += 2;
+      const props = {};
+      while (i < lines.length) {
+        const c = parseInt(lines[i].trim());
+        const v = (i + 1 < lines.length) ? lines[i + 1].trim() : '';
+        if (c === 0) break;
+        props[c] = v;
+        i += 2;
+      }
+      if (etype === 'LINE') {
+        entities.push({ type: 'line', x1: +props[10]||0, y1: +props[20]||0, x2: +props[11]||0, y2: +props[21]||0, layer: props[8]||'0' });
+      } else if (etype === 'CIRCLE') {
+        entities.push({ type: 'circle', cx: +props[10]||0, cy: +props[20]||0, r: +props[40]||0, layer: props[8]||'0' });
+      } else if (etype === 'ARC') {
+        entities.push({ type: 'arc', cx: +props[10]||0, cy: +props[20]||0, r: +props[40]||0, startAngle: +props[50]||0, endAngle: +props[51]||360, layer: props[8]||'0' });
+      } else if (etype === 'LWPOLYLINE') {
+        // Collect vertices
+        const verts = [];
+        const vertData = {};
+        for (const [k, v] of Object.entries(props)) {
+          const kn = parseInt(k);
+          if (kn >= 10 && kn <= 39) vertData[kn] = vertData[kn] || [];
+        }
+        // Re-parse for multi-value groups
+        entities.push({ type: 'lwpolyline', layer: props[8]||'0', rawProps: props });
+      } else {
+        i = i; // skip unknown
+      }
+    } else {
+      i += 2;
+    }
+  }
+  return entities;
+}
+
+function groupEntitiesIntoParts(entities) {
+  // Group by layer, then compute bounding boxes
+  const layers = {};
+  entities.forEach(e => {
+    const layer = e.layer || '0';
+    if (!layers[layer]) layers[layer] = { entities: [], points: [] };
+    layers[layer].entities.push(e);
+    if (e.type === 'line') {
+      layers[layer].points.push([e.x1, e.y1], [e.x2, e.y2]);
+    } else if (e.type === 'circle') {
+      layers[layer].points.push([e.cx - e.r, e.cy - e.r], [e.cx + e.r, e.cy + e.r]);
+    } else if (e.type === 'arc') {
+      layers[layer].points.push([e.cx - e.r, e.cy - e.r], [e.cx + e.r, e.cy + e.r]);
+    }
+  });
+  return Object.entries(layers).map(([name, data]) => ({
+    name: name === '0' ? 'Part' : name,
+    entities: data.entities,
+    points: data.points
+  })).filter(g => g.points.length >= 2);
+}
+
+function drawDXFPreview(entities) {
+  const card = document.getElementById('dxf-preview-card');
+  card.classList.remove('hidden');
+  const canvas = document.getElementById('dxf-preview-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * 2;
+  canvas.height = 600;
+  ctx.scale(2, 2);
+  const W = canvas.offsetWidth;
+  const H = 300;
+  ctx.fillStyle = '#27272a';
+  ctx.fillRect(0, 0, W, H);
+
+  let allPts = [];
+  entities.forEach(e => {
+    if (e.type === 'line') allPts.push([e.x1, e.y1], [e.x2, e.y2]);
+    else if (e.type === 'circle' || e.type === 'arc') allPts.push([e.cx - e.r, e.cy - e.r], [e.cx + e.r, e.cy + e.r]);
+  });
+  if (allPts.length === 0) return;
+  const minX = Math.min(...allPts.map(p => p[0]));
+  const maxX = Math.max(...allPts.map(p => p[0]));
+  const minY = Math.min(...allPts.map(p => p[1]));
+  const maxY = Math.max(...allPts.map(p => p[1]));
+  const dxfW = maxX - minX || 1;
+  const dxfH = maxY - minY || 1;
+  const pad = 30;
+  const scale = Math.min((W - 2 * pad) / dxfW, (H - 2 * pad) / dxfH);
+  const ox = pad + ((W - 2 * pad) - dxfW * scale) / 2;
+  const oy = pad + ((H - 2 * pad) - dxfH * scale) / 2;
+  const tx = x => ox + (x - minX) * scale;
+  const ty = y => oy + (maxY - y) * scale; // flip Y
+
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth = 1.5;
+  entities.forEach(e => {
+    if (e.type === 'line') {
+      ctx.beginPath();
+      ctx.moveTo(tx(e.x1), ty(e.y1));
+      ctx.lineTo(tx(e.x2), ty(e.y2));
+      ctx.stroke();
+    } else if (e.type === 'circle') {
+      ctx.beginPath();
+      ctx.arc(tx(e.cx), ty(e.cy), e.r * scale, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (e.type === 'arc') {
+      ctx.beginPath();
+      const sa = -e.endAngle * Math.PI / 180;
+      const ea = -e.startAngle * Math.PI / 180;
+      ctx.arc(tx(e.cx), ty(e.cy), e.r * scale, sa, ea);
+      ctx.stroke();
+    }
+  });
+}
+
+// ============================================================
+// OPTIMIZATION
+// ============================================================
+function runPrecheck() {
+  const el = document.getElementById('precheck-results');
+  const checks = [];
+  const sheetParts = state.parts.filter(p => p.cutType === 'sheet');
+  const beamParts = state.parts.filter(p => p.cutType === 'beam');
+  const totalSheets = state.sheets.reduce((a, s) => a + s.qty, 0);
+  const totalBeams = state.beams.reduce((a, b) => a + b.qty, 0);
+
+  if (state.parts.length === 0) checks.push({ icon: 'alert-triangle', color: 'text-yellow-400', msg: 'No parts defined yet' });
+  else checks.push({ icon: 'check', color: 'text-green-400', msg: `${state.parts.reduce((a,p) => a+p.qty, 0)} total parts to cut` });
+
+  if (sheetParts.length > 0 && totalSheets === 0) checks.push({ icon: 'x-circle', color: 'text-red-400', msg: 'Sheet parts need sheet stock!' });
+  else if (sheetParts.length > 0) checks.push({ icon: 'check', color: 'text-green-400', msg: `${totalSheets} sheets available for ${sheetParts.reduce((a,p)=>a+p.qty,0)} sheet parts` });
+
+  if (beamParts.length > 0 && totalBeams === 0) checks.push({ icon: 'x-circle', color: 'text-red-400', msg: 'Beam parts need beam stock!' });
+  else if (beamParts.length > 0) checks.push({ icon: 'check', color: 'text-green-400', msg: `${totalBeams} beams available for ${beamParts.reduce((a,p)=>a+p.qty,0)} beam parts` });
+
+  // Check if any part is too large
+  sheetParts.forEach(p => {
+    for (let q = 0; q < p.qty; q++) {
+      const fits = state.sheets.some(s => {
+        const bw = p.boundW || p.length || p.diameter;
+        const bh = p.boundH || p.width || p.diameter;
+        return (bw <= s.length && bh <= s.width) || (state.optRotate && bh <= s.length && bw <= s.width);
+      });
+      if (!fits) {
+        checks.push({ icon: 'alert-triangle', color: 'text-red-400', msg: `"${p.name}" won't fit any sheet!` });
+        break;
+      }
+    }
+  });
+
+  el.innerHTML = checks.map(c => `
+    <div class="flex items-center gap-2 ${c.color}">
+      <i data-lucide="${c.icon}" class="w-3.5 h-3.5 flex-shrink-0"></i>
+      <span>${c.msg}</span>
+    </div>
+  `).join('');
+  lucide.createIcons();
+}
+
+let optGrainOn = false, optRotateOn = true;
+function toggleGrain() {
+  optGrainOn = !optGrainOn;
+  state.optGrain = optGrainOn;
+  const btn = document.getElementById('opt-grain-toggle');
+  btn.className = `w-8 h-5 rounded-full ${optGrainOn ? 'bg-amber-500' : 'bg-zinc-700'} relative transition-all`;
+  btn.firstElementChild.className = `w-4 h-4 rounded-full bg-white absolute top-0.5 ${optGrainOn ? 'left-3.5' : 'left-0.5'} transition-all`;
+}
+function toggleRotate() {
+  optRotateOn = !optRotateOn;
+  state.optRotate = optRotateOn;
+  const btn = document.getElementById('opt-rotate-toggle');
+  btn.className = `w-8 h-5 rounded-full ${optRotateOn ? 'bg-amber-500' : 'bg-zinc-700'} relative transition-all`;
+  btn.firstElementChild.className = `w-4 h-4 rounded-full bg-white absolute top-0.5 ${optRotateOn ? 'left-3.5' : 'left-0.5'} transition-all`;
+}
+
+function runOptimization() {
+  const kerf = parseFloat(document.getElementById('opt-kerf').value) || 3.2;
+  const margin = parseFloat(document.getElementById('opt-margin').value) || 10;
+  const algo = document.getElementById('opt-algorithm').value;
+  const sortBy = document.getElementById('opt-sort').value;
+
+  // Expand parts by quantity
+  const sheetParts = [];
+  state.parts.filter(p => p.cutType === 'sheet').forEach(p => {
+    for (let i = 0; i < p.qty; i++) {
+      sheetParts.push({
+        ...p,
+        instanceId: `${p.id}-${i}`,
+        w: p.boundW || p.length || p.diameter,
+        h: p.boundH || p.width || p.diameter
+      });
+    }
+  });
+
+  const beamParts = [];
+  state.parts.filter(p => p.cutType === 'beam').forEach(p => {
+    for (let i = 0; i < p.qty; i++) {
+      beamParts.push({
+        ...p,
+        instanceId: `${p.id}-${i}`,
+        cutLength: p.length || p.boundW
+      });
+    }
+  });
+
+  // Sort parts
+  if (sortBy === 'area') sheetParts.sort((a, b) => (b.w * b.h) - (a.w * a.h));
+  else if (sortBy === 'height') sheetParts.sort((a, b) => Math.max(b.w, b.h) - Math.max(a.w, a.h));
+  else if (sortBy === 'width') sheetParts.sort((a, b) => Math.max(b.w, b.h) - Math.max(a.w, a.h));
+  else if (sortBy === 'perimeter') sheetParts.sort((a, b) => (2*(b.w+b.h)) - (2*(a.w+a.h)));
+
+  // Expand available sheets
+  const availSheets = [];
+  state.sheets.forEach(s => {
+    for (let i = 0; i < s.qty; i++) {
+      availSheets.push({
+        ...s,
+        usableW: s.length - 2 * margin,
+        usableH: s.width - 2 * margin,
+        placements: [],
+        freeRects: [{ x: margin, y: margin, w: s.length - 2 * margin, h: s.width - 2 * margin }]
+      });
+    }
+  });
+
+  // Run sheet nesting
+  const unplaced = [];
+  if (algo === 'guillotine') {
+    guillotineNest(sheetParts, availSheets, kerf, unplaced);
+  } else if (algo === 'shelf') {
+    shelfNest(sheetParts, availSheets, kerf, margin, unplaced);
+  } else {
+    bestFitNest(sheetParts, availSheets, kerf, unplaced);
+  }
+
+  // Run beam nesting (1D bin packing)
+  const availBeams = [];
+  state.beams.forEach(b => {
+    for (let i = 0; i < b.qty; i++) {
+      availBeams.push({ ...b, usableLength: b.length - 2 * margin, cuts: [], remaining: b.length - 2 * margin });
+    }
+  });
+  beamParts.sort((a, b) => b.cutLength - a.cutLength);
+  const unplacedBeams = [];
+  beamParts.forEach(part => {
+    let placed = false;
+    for (const beam of availBeams) {
+      if (beam.remaining >= part.cutLength) {
+        const pos = beam.usableLength - beam.remaining + margin;
+        beam.cuts.push({ part, pos, length: part.cutLength });
+        beam.remaining -= (part.cutLength + kerf);
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) unplacedBeams.push(part);
+  });
+
+  // Calculate results
+  const usedSheets = availSheets.filter(s => s.placements.length > 0);
+  const totalSheetArea = usedSheets.reduce((a, s) => a + s.length * s.width, 0);
+  const usedArea = usedSheets.reduce((a, s) => a + s.placements.reduce((b, p) => b + p.w * p.h, 0), 0);
+  const utilization = totalSheetArea > 0 ? (usedArea / totalSheetArea * 100) : 0;
+  const totalCost = usedSheets.reduce((a, s) => a + s.cost, 0) + availBeams.filter(b => b.cuts.length > 0).reduce((a, b) => a + b.cost, 0);
+
+  state.results = {
+    sheets: usedSheets,
+    beams: availBeams.filter(b => b.cuts.length > 0),
+    unplaced,
+    unplacedBeams,
+    utilization,
+    waste: 100 - utilization,
+    totalCost,
+    usedArea,
+    totalSheetArea,
+    kerf,
+    margin
+  };
+
+  state.currentSheet = 0;
+  drawSheetLayout();
+  drawBeamLayout();
+  renderResults();
+  switchTab('results');
+  showToast(`Optimization complete — ${utilization.toFixed(1)}% utilization`);
+}
+
+// ============================================================
+// GUILLOTINE NESTING (maxrects variant)
+// ============================================================
+function guillotineNest(parts, sheets, kerf, unplaced) {
+  parts.forEach(part => {
+    let placed = false;
+    for (const sheet of sheets) {
+      const result = tryPlaceGuillotine(sheet, part, kerf);
+      if (result) {
+        sheet.placements.push(result);
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) unplaced.push(part);
+  });
+}
+
+function tryPlaceGuillotine(sheet, part, kerf) {
+  let bestRect = null, bestIdx = -1, bestRotated = false, bestScore = Infinity;
+  const pw = part.w + kerf;
+  const ph = part.h + kerf;
+  const pwR = part.h + kerf;
+  const phR = part.w + kerf;
+
+  sheet.freeRects.forEach((rect, idx) => {
+    // Try normal
+    if (pw <= rect.w + 0.01 && ph <= rect.h + 0.01) {
+      const score = rect.w * rect.h - pw * ph; // least waste
+      if (score < bestScore) { bestScore = score; bestRect = rect; bestIdx = idx; bestRotated = false; }
+    }
+    // Try rotated
+    if (state.optRotate && part.rotation !== 'none') {
+      if (pwR <= rect.w + 0.01 && phR <= rect.h + 0.01) {
+        const score = rect.w * rect.h - pwR * phR;
+        if (score < bestScore) { bestScore = score; bestRect = rect; bestIdx = idx; bestRotated = true; }
+      }
+    }
+  });
+
+  if (!bestRect) return null;
+
+  const actualW = bestRotated ? part.h : part.w;
+  const actualH = bestRotated ? part.w : part.h;
+  const placement = {
+    part, x: bestRect.x, y: bestRect.y,
+    w: actualW, h: actualH, rotated: bestRotated
+  };
+
+  // Split the free rectangle (guillotine split)
+  sheet.freeRects.splice(bestIdx, 1);
+  const remainRight = { x: bestRect.x + actualW + kerf, y: bestRect.y, w: bestRect.w - actualW - kerf, h: actualH + kerf };
+  const remainBelow = { x: bestRect.x, y: bestRect.y + actualH + kerf, w: bestRect.w, h: bestRect.h - actualH - kerf };
+
+  if (remainRight.w > 10 && remainRight.h > 10) sheet.freeRects.push(remainRight);
+  if (remainBelow.w > 10 && remainBelow.h > 10) sheet.freeRects.push(remainBelow);
+
+  // Sort free rects by area (smallest first for best fit)
+  sheet.freeRects.sort((a, b) => (a.w * a.h) - (b.w * b.h));
+
+  return placement;
+}
+
+// ============================================================
+// SHELF NESTING (NFDH)
+// ============================================================
+function shelfNest(parts, sheets, kerf, margin, unplaced) {
+  parts.forEach(part => {
+    let placed = false;
+    for (const sheet of sheets) {
+      if (!sheet.shelves) sheet.shelves = [{ y: margin, h: 0, x: margin }];
+      const result = tryPlaceShelf(sheet, part, kerf, margin);
+      if (result) {
+        sheet.placements.push(result);
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) unplaced.push(part);
+  });
+}
+
+function tryPlaceShelf(sheet, part, kerf, margin) {
+  for (const shelf of sheet.shelves) {
+    const pw = part.w, ph = part.h;
+    if (shelf.x + pw + kerf <= sheet.length - margin && shelf.y + ph + kerf <= sheet.width - margin) {
+      const placement = { part, x: shelf.x, y: shelf.y, w: pw, h: ph, rotated: false };
+      shelf.x += pw + kerf;
+      shelf.h = Math.max(shelf.h, ph);
+      return placement;
+    }
+    // Try rotated
+    if (state.optRotate && part.rotation !== 'none') {
+      if (shelf.x + ph + kerf <= sheet.length - margin && shelf.y + pw + kerf <= sheet.width - margin) {
+        const placement = { part, x: shelf.x, y: shelf.y, w: ph, h: pw, rotated: true };
+        shelf.x += ph + kerf;
+        shelf.h = Math.max(shelf.h, pw);
+        return placement;
+      }
+    }
+  }
+  // New shelf
+  const lastShelf = sheet.shelves[sheet.shelves.length - 1];
+  const newY = lastShelf.y + lastShelf.h + kerf;
+  if (newY + part.h <= sheet.width - margin && margin + part.w <= sheet.length - margin) {
+    const newShelf = { y: newY, h: part.h, x: margin + part.w + kerf };
+    sheet.shelves.push(newShelf);
+    return { part, x: margin, y: newY, w: part.w, h: part.h, rotated: false };
+  }
+  return null;
+}
+
+// ============================================================
+// BEST FIT DECREASING
+// ============================================================
+function bestFitNest(parts, sheets, kerf, unplaced) {
+  guillotineNest(parts, sheets, kerf, unplaced); // same algo but parts pre-sorted
+}
+
+// ============================================================
+// DRAWING
+// ============================================================
+function drawSheetLayout() {
+  if (!state.results || state.results.sheets.length === 0) return;
+  const canvas = document.getElementById('layout-canvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = 2;
+  const W = canvas.offsetWidth;
+  const H = 500;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  ctx.scale(dpr, dpr);
+
+  // Sheet tabs
+  const tabsEl = document.getElementById('sheet-tabs');
+  tabsEl.innerHTML = state.results.sheets.map((s, i) => `
+    <button onclick="state.currentSheet=${i}; drawSheetLayout()" class="${i === state.currentSheet ? 'bg-amber-500 text-zinc-900' : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'} text-xs font-mono px-2 py-1 rounded transition-colors">Sheet ${i + 1}</button>
+  `).join('');
+
+  const sheet = state.results.sheets[state.currentSheet];
+  if (!sheet) return;
+
+  ctx.fillStyle = '#27272a';
+  ctx.fillRect(0, 0, W, H);
+
+  // Scale to fit
+  const pad = 40;
+  const scale = Math.min((W - 2 * pad) / sheet.length, (H - 2 * pad) / sheet.width);
+  const ox = pad + ((W - 2 * pad) - sheet.length * scale) / 2;
+  const oy = pad + ((H - 2 * pad) - sheet.width * scale) / 2;
+
+  // Draw sheet outline
+  ctx.strokeStyle = '#52525b';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(ox, oy, sheet.length * scale, sheet.width * scale);
+
+  // Margin area
+  const m = state.results.margin * scale;
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = '#3f3f46';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(ox + m, oy + m, sheet.length * scale - 2 * m, sheet.width * scale - 2 * m);
+  ctx.setLineDash([]);
+
+  // Draw parts
+  sheet.placements.forEach((pl, i) => {
+    const x = ox + pl.x * scale;
+    const y = oy + pl.y * scale;
+    const w = pl.w * scale;
+    const h = pl.h * scale;
+    const colorIdx = state.parts.findIndex(p => p.id === pl.part.id);
+    const color = PART_COLORS[(colorIdx >= 0 ? colorIdx : i) % PART_COLORS.length];
+
+    ctx.fillStyle = color + '40';
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x, y, w, h);
+
+    // Label
+    ctx.fillStyle = '#f4f4f5';
+    ctx.font = `${Math.min(11, w / 6)}px "JetBrains Mono"`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const label = pl.part.name.length > 12 ? pl.part.name.slice(0, 10) + '…' : pl.part.name;
+    if (w > 30 && h > 16) {
+      ctx.fillText(label, x + w / 2, y + h / 2 - 6);
+      ctx.fillStyle = '#a1a1aa';
+      ctx.font = `${Math.min(9, w / 8)}px "JetBrains Mono"`;
+      ctx.fillText(`${pl.part.w || pl.w}×${pl.part.h || pl.h}`, x + w / 2, y + h / 2 + 6);
+    }
+  });
+
+  // Dimensions
+  ctx.fillStyle = '#71717a';
+  ctx.font = '10px "JetBrains Mono"';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${sheet.length} mm`, ox + sheet.length * scale / 2, oy - 8);
+  ctx.save();
+  ctx.translate(ox - 8, oy + sheet.width * scale / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText(`${sheet.width} mm`, 0, 0);
+  ctx.restore();
+
+  // Info
+  ctx.fillStyle = '#a1a1aa';
+  ctx.font = '10px "JetBrains Mono"';
+  ctx.textAlign = 'left';
+  ctx.fillText(`${sheet.material} | ${sheet.thickness}mm thick | ${sheet.placements.length} parts`, ox, oy + sheet.width * scale + 20);
+
+  // Legend
+  const legendEl = document.getElementById('layout-legend');
+  legendEl.classList.remove('hidden');
+  const uniqueParts = [...new Set(sheet.placements.map(p => p.part.id))];
+  legendEl.innerHTML = uniqueParts.map(pid => {
+    const p = state.parts.find(pp => pp.id === pid);
+    const idx = state.parts.indexOf(p);
+    const color = PART_COLORS[idx % PART_COLORS.length];
+    return `<div class="flex items-center gap-1.5 text-xs font-mono text-zinc-400"><span class="w-3 h-3 rounded" style="background:${color}"></span>${p ? p.name : 'Part'}</div>`;
+  }).join('');
+}
+
+function drawBeamLayout() {
+  if (!state.results || state.results.beams.length === 0) {
+    document.getElementById('beam-cuts-card').classList.add('hidden');
+    return;
+  }
+  document.getElementById('beam-cuts-card').classList.remove('hidden');
+  const canvas = document.getElementById('beam-canvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = 2;
+  const W = canvas.offsetWidth;
+  const beamH = 40;
+  const gap = 10;
+  const H = state.results.beams.length * (beamH + gap) + 40;
+  canvas.height = H;
+  canvas.width = W * dpr;
+  canvas.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+  ctx.fillStyle = '#27272a';
+  ctx.fillRect(0, 0, W, H);
+
+  const pad = 20;
+  const maxLen = Math.max(...state.results.beams.map(b => b.length));
+  const scale = (W - 2 * pad) / maxLen;
+
+  state.results.beams.forEach((beam, bi) => {
+    const y = pad + bi * (beamH + gap);
+    // Beam outline
+    ctx.fillStyle = '#3f3f46';
+    ctx.fillRect(pad, y, beam.length * scale, beamH);
+    ctx.strokeStyle = '#52525b';
+    ctx.strokeRect(pad, y, beam.length * scale, beamH);
+
+    // Cuts
+    beam.cuts.forEach((cut, ci) => {
+      const color = PART_COLORS[ci % PART_COLORS.length];
+      const x = pad + cut.pos * scale;
+      const w = cut.length * scale;
+      ctx.fillStyle = color + '60';
+      ctx.fillRect(x, y + 2, w, beamH - 4);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y + 2, w, beamH - 4);
+      ctx.fillStyle = '#f4f4f5';
+      ctx.font = '9px "JetBrains Mono"';
+      ctx.textAlign = 'center';
+      if (w > 30) ctx.fillText(cut.part.name, x + w / 2, y + beamH / 2 + 3);
+    });
+
+    // Label
+    ctx.fillStyle = '#71717a';
+    ctx.font = '9px "JetBrains Mono"';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${beam.material} ${beam.length}mm`, pad, y - 3);
+  });
+}
+
+// ============================================================
+// RESULTS RENDERING
+// ============================================================
+function renderResults() {
+  if (!state.results) return;
+  document.getElementById('no-results').classList.add('hidden');
+  document.getElementById('results-content').classList.remove('hidden');
+
+  document.getElementById('res-util').textContent = state.results.utilization.toFixed(1) + '%';
+  document.getElementById('res-waste').textContent = state.results.waste.toFixed(1) + '%';
+  document.getElementById('res-sheets-used').textContent = state.results.sheets.length;
+  document.getElementById('res-cost').textContent = '€' + state.results.totalCost.toFixed(2);
+
+  // Cut list
+  const body = document.getElementById('cutlist-body');
+  const rows = [];
+  state.results.sheets.forEach((sheet, si) => {
+    sheet.placements.forEach(pl => {
+      rows.push(`
+        <tr class="border-b border-zinc-800">
+          <td class="py-1.5 px-2 text-zinc-100">${pl.part.name}</td>
+          <td class="py-1.5 px-2 text-right text-zinc-400">${Math.round(pl.w)}×${Math.round(pl.h)} mm</td>
+          <td class="py-1.5 px-2 text-center"><span class="text-xs px-1.5 py-0.5 bg-amber-500/10 text-amber-400 rounded">${si + 1}</span></td>
+          <td class="py-1.5 px-2 text-right text-zinc-400">(${Math.round(pl.x)}, ${Math.round(pl.y)})</td>
+          <td class="py-1.5 px-2 text-center">${pl.rotated ? '<span class="text-amber-400">90°</span>' : '-'}</td>
+        </tr>
+      `);
+    });
+  });
+  body.innerHTML = rows.join('');
+
+  // Offcuts
+  const offcutsEl = document.getElementById('offcuts-list');
+  const offcuts = [];
+  state.results.sheets.forEach((sheet, si) => {
+    sheet.freeRects.forEach(r => {
+      if (r.w > 50 && r.h > 50) {
+        offcuts.push({ sheet: si + 1, w: Math.round(r.w), h: Math.round(r.h), area: r.w * r.h });
+      }
+    });
+  });
+  offcuts.sort((a, b) => b.area - a.area);
+  offcutsEl.innerHTML = offcuts.length > 0
+    ? offcuts.slice(0, 9).map(o => `
+        <div class="bg-zinc-800 rounded-lg p-3 flex items-center gap-3">
+          <div class="w-10 h-10 border border-zinc-600 rounded flex items-center justify-center text-zinc-500">
+            <i data-lucide="square" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="font-mono text-xs text-zinc-100">${o.w} × ${o.h} mm</div>
+            <div class="text-xs text-zinc-500">Sheet #${o.sheet} · ${(o.area / 10000).toFixed(1)} cm²</div>
+          </div>
+        </div>
+      `).join('')
+    : '<p class="text-xs text-zinc-500 font-mono col-span-3">No significant offcuts</p>';
+  lucide.createIcons();
+
+  drawUtilChart();
+}
+
+function drawUtilChart() {
+  if (!state.results) return;
+  const canvas = document.getElementById('util-chart');
+  const ctx = canvas.getContext('2d');
+  const dpr = 2;
+  const W = canvas.offsetWidth;
+  const H = 250;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.fillStyle = '#18181b';
+  ctx.fillRect(0, 0, W, H);
+
+  const sheets = state.results.sheets;
+  if (sheets.length === 0) return;
+  const barW = Math.min(60, (W - 60) / sheets.length - 10);
+  const maxArea = Math.max(...sheets.map(s => s.length * s.width));
+  const pad = { top: 20, bottom: 40, left: 40, right: 20 };
+  const chartH = H - pad.top - pad.bottom;
+  const chartW = W - pad.left - pad.right;
+
+  sheets.forEach((sheet, i) => {
+    const totalArea = sheet.length * sheet.width;
+    const usedArea = sheet.placements.reduce((a, p) => a + p.w * p.h, 0);
+    const util = usedArea / totalArea;
+    const x = pad.left + (chartW / sheets.length) * i + (chartW / sheets.length - barW) / 2;
+
+    // Waste bar (full height)
+    const fullH = (totalArea / maxArea) * chartH;
+    ctx.fillStyle = '#3f3f46';
+    ctx.fillRect(x, pad.top + chartH - fullH, barW, fullH);
+
+    // Used bar
+    const usedH = util * fullH;
+    ctx.fillStyle = util > 0.8 ? '#22c55e' : util > 0.6 ? '#f59e0b' : '#ef4444';
+    ctx.fillRect(x, pad.top + chartH - usedH, barW, usedH);
+
+    // Label
+    ctx.fillStyle = '#a1a1aa';
+    ctx.font = '10px "JetBrains Mono"';
+    ctx.textAlign = 'center';
+    ctx.fillText(`#${i + 1}`, x + barW / 2, H - pad.bottom + 14);
+    ctx.fillStyle = '#f4f4f5';
+    ctx.fillText(`${(util * 100).toFixed(0)}%`, x + barW / 2, pad.top + chartH - usedH - 6);
+  });
+
+  // Y axis
+  ctx.strokeStyle = '#3f3f46';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top);
+  ctx.lineTo(pad.left, pad.top + chartH);
+  ctx.lineTo(W - pad.right, pad.top + chartH);
+  ctx.stroke();
+}
+
+// ============================================================
+// EXPORT
+// ============================================================
+function exportCutListCSV() {
+  if (!state.results) return;
+  let csv = 'Part,Width(mm),Height(mm),Sheet,X,Y,Rotated\n';
+  state.results.sheets.forEach((sheet, si) => {
+    sheet.placements.forEach(pl => {
+      csv += `"${pl.part.name}",${Math.round(pl.w)},${Math.round(pl.h)},${si + 1},${Math.round(pl.x)},${Math.round(pl.y)},${pl.rotated}\n`;
+    });
+  });
+  downloadFile('cut-list.csv', csv, 'text/csv');
+  showToast('Cut list exported as CSV');
+}
+
+function exportLayoutSVG() {
+  if (!state.results || state.results.sheets.length === 0) return;
+  const sheet = state.results.sheets[state.currentSheet];
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${sheet.length}" height="${sheet.width}" viewBox="0 0 ${sheet.length} ${sheet.width}">\n`;
+  svg += `<rect x="0" y="0" width="${sheet.length}" height="${sheet.width}" fill="none" stroke="#333" stroke-width="2"/>\n`;
+  sheet.placements.forEach((pl, i) => {
+    const color = PART_COLORS[i % PART_COLORS.length];
+    svg += `<rect x="${pl.x}" y="${pl.y}" width="${pl.w}" height="${pl.h}" fill="${color}33" stroke="${color}" stroke-width="1"/>\n`;
+    svg += `<text x="${pl.x + pl.w / 2}" y="${pl.y + pl.h / 2}" text-anchor="middle" dominant-baseline="middle" font-family="monospace" font-size="12" fill="#fff">${pl.part.name}</text>\n`;
+  });
+  svg += '</svg>';
+  downloadFile(`sheet-${state.currentSheet + 1}-layout.svg`, svg, 'image/svg+xml');
+  showToast('Layout exported as SVG');
+}
+
+function exportProject() {
+  const data = JSON.stringify({ sheets: state.sheets, beams: state.beams, parts: state.parts }, null, 2);
+  downloadFile('wood-optimizer-project.json', data, 'application/json');
+  showToast('Project exported');
+}
+
+function importProject() {
+  document.getElementById('import-input').click();
+}
+
+function handleImportProject(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.sheets) { state.sheets = data.sheets; renderSheets(); }
+      if (data.beams) { state.beams = data.beams; renderBeams(); }
+      if (data.parts) { state.parts = data.parts; renderParts(); }
+      nextSheetId = Math.max(...state.sheets.map(s => s.id), 0) + 1;
+      nextBeamId = Math.max(...state.beams.map(b => b.id), 0) + 1;
+      nextPartId = Math.max(...state.parts.map(p => p.id), 0) + 1;
+      showToast('Project imported');
+    } catch (err) { showToast('Invalid project file'); }
+  };
+  reader.readAsText(file);
+}
+
+function clearAll() {
+  if (!confirm('Clear all stock, parts, and results?')) return;
+  state = { sheets: [], beams: [], parts: [], results: null, currentSheet: 0, optGrain: false, optRotate: true };
+  renderSheets(); renderBeams(); renderParts();
+  document.getElementById('no-results').classList.remove('hidden');
+  document.getElementById('results-content').classList.add('hidden');
+  showToast('All data cleared');
+}
+
+function downloadFile(name, content, type) {
+  const blob = new Blob([content], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function printResults() {
+  window.print();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  renderSheets();
+  renderBeams();
+  renderParts();
+  updateSummary();
+  lucide.createIcons();
+});
+
+// Canvas tooltip on layout
+const layoutCanvas = document.getElementById('layout-canvas');
+layoutCanvas.addEventListener('mousemove', (e) => {
+  if (!state.results || state.results.sheets.length === 0) return;
+  const sheet = state.results.sheets[state.currentSheet];
+  if (!sheet) return;
+  const rect = layoutCanvas.getBoundingClientRect();
+  const W = rect.width;
+  const H = 500;
+  const pad = 40;
+  const scale = Math.min((W - 2 * pad) / sheet.length, (H - 2 * pad) / sheet.width);
+  const ox = pad + ((W - 2 * pad) - sheet.length * scale) / 2;
+  const oy = pad + ((H - 2 * pad) - sheet.width * scale) / 2;
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  const tip = document.getElementById('layout-tooltip');
+  let found = false;
+  for (const pl of sheet.placements) {
+    const px = ox + pl.x * scale;
+    const py = oy + pl.y * scale;
+    const pw = pl.w * scale;
+    const ph = pl.h * scale;
+    if (mx >= px && mx <= px + pw && my >= py && my <= py + ph) {
+      tip.classList.remove('hidden');
+      tip.style.left = (mx + 12) + 'px';
+      tip.style.top = (my - 30) + 'px';
+      tip.innerHTML = `<span class="text-amber-400 font-bold">${pl.part.name}</span><br><span class="text-zinc-400">${Math.round(pl.w)}×${Math.round(pl.h)} mm${pl.rotated ? ' (rotated)' : ''}</span>`;
+      found = true;
+      break;
+    }
+  }
+  if (!found) tip.classList.add('hidden');
+});
+layoutCanvas.addEventListener('mouseleave', () => {
+  document.getElementById('layout-tooltip').classList.add('hidden');
+});
+</script>
+</body>
+</html>
