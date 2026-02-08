@@ -548,6 +548,7 @@ tailwind.config = {
               <button onclick="loadExampleParts('cabinet')" class="bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-xs font-mono px-3 py-1.5 rounded-lg transition-colors">Cabinet Example</button>
               <button onclick="loadExampleParts('shelf')" class="bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-xs font-mono px-3 py-1.5 rounded-lg transition-colors">Bookshelf Example</button>
               <button onclick="clearParts()" class="text-zinc-400 hover:text-red-400 hover:bg-zinc-800 px-2 py-1.5 rounded-lg transition-colors text-xs font-mono">Clear</button>
+              <button onclick="analyzeAndSuggest()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg transition-colors text-xs font-mono font-semibold">Inkoopadvies</button>
             </div>
           </div>
           <div class="overflow-x-auto">
@@ -850,7 +851,201 @@ function addSheet() {
   toggleSheetForm();
 }
 
-    function handleSheetPresetSelect(sel) {
+    
+const HORNBACH_SHEETS = [
+  {l:1250,w:625,t:15,mat:'OSB',p:6.70,cat:'OSB',n:'OSB-III mini 1250x625x15mm'},
+  {l:2440,w:610,t:9,mat:'OSB',p:8.49,cat:'OSB',n:'OSB-III recht 2440x610x9mm'},
+  {l:2440,w:1220,t:9,mat:'OSB',p:14.95,cat:'OSB',n:'OSB-III 2440x1220x9mm'},
+  {l:2440,w:1220,t:12,mat:'OSB',p:18.49,cat:'OSB',n:'OSB-III 2440x1220x12mm'},
+  {l:2440,w:1220,t:15,mat:'OSB',p:19.49,cat:'OSB',n:'OSB-III 2440x1220x15mm'},
+  {l:2440,w:1220,t:18,mat:'OSB',p:22.49,cat:'OSB',n:'OSB-III 2440x1220x18mm'},
+  {l:1220,w:610,t:3,mat:'MDF',p:3.69,cat:'MDF',n:'MDF 1220x610x3mm'},
+  {l:1220,w:610,t:6,mat:'MDF',p:5.19,cat:'MDF',n:'MDF 1220x610x6mm'},
+  {l:1220,w:610,t:9,mat:'MDF',p:5.99,cat:'MDF',n:'MDF 1220x610x9mm'},
+  {l:1220,w:610,t:12,mat:'MDF',p:7.59,cat:'MDF',n:'MDF 1220x610x12mm'},
+  {l:2440,w:1220,t:9,mat:'MDF',p:16.49,cat:'MDF',n:'MDF 2440x1220x9mm'},
+  {l:2440,w:1220,t:12,mat:'MDF',p:18.49,cat:'MDF',n:'MDF 2440x1220x12mm'},
+  {l:2440,w:1220,t:18,mat:'MDF',p:25.95,cat:'MDF',n:'MDF 2440x1220x18mm'},
+  {l:1220,w:610,t:4,mat:'Populieren multiplex',p:5.39,cat:'Multiplex binnen',n:'Populieren 1220x610x4mm'},
+  {l:1220,w:610,t:9,mat:'Populieren multiplex',p:8.49,cat:'Multiplex binnen',n:'Populieren 1220x610x9mm'},
+  {l:1220,w:610,t:12,mat:'Populieren multiplex',p:9.99,cat:'Multiplex binnen',n:'Populieren 1220x610x12mm'},
+  {l:1220,w:610,t:18,mat:'Populieren multiplex',p:13.49,cat:'Multiplex binnen',n:'Populieren 1220x610x18mm'},
+  {l:2440,w:1220,t:4,mat:'Populieren multiplex',p:14.95,cat:'Multiplex binnen',n:'Populieren 2440x1220x4mm'},
+  {l:2440,w:1220,t:12,mat:'Populieren multiplex',p:29.95,cat:'Multiplex binnen',n:'Populieren 2440x1220x12mm'},
+  {l:2440,w:1220,t:18,mat:'Populieren multiplex',p:39.95,cat:'Multiplex binnen',n:'Populieren 2440x1220x18mm'},
+  {l:1220,w:610,t:9,mat:'Okoum\u00e9 multiplex',p:12.95,cat:'Multiplex buiten',n:'Okoum\u00e9 1220x610x9mm'},
+  {l:1220,w:610,t:12,mat:'Okoum\u00e9 multiplex',p:14.95,cat:'Multiplex buiten',n:'Okoum\u00e9 1220x610x12mm'},
+  {l:1220,w:610,t:18,mat:'Okoum\u00e9 multiplex',p:19.95,cat:'Multiplex buiten',n:'Okoum\u00e9 1220x610x18mm'},
+  {l:2440,w:1220,t:12,mat:'Okoum\u00e9 multiplex',p:44.95,cat:'Multiplex buiten',n:'Okoum\u00e9 2440x1220x12mm'},
+  {l:2440,w:1220,t:18,mat:'Okoum\u00e9 multiplex',p:59.95,cat:'Multiplex buiten',n:'Okoum\u00e9 2440x1220x18mm'},
+  {l:1220,w:610,t:9,mat:'Underlayment',p:6.99,cat:'Underlayment',n:'Underlayment 1220x610x9mm'},
+  {l:1220,w:610,t:12,mat:'Underlayment',p:8.99,cat:'Underlayment',n:'Underlayment 1220x610x12mm'},
+  {l:1220,w:610,t:18,mat:'Underlayment',p:12.95,cat:'Underlayment',n:'Underlayment 1220x610x18mm'},
+  {l:2440,w:1220,t:9,mat:'Underlayment',p:19.95,cat:'Underlayment',n:'Underlayment 2440x1220x9mm'},
+  {l:2440,w:1220,t:12,mat:'Underlayment',p:24.95,cat:'Underlayment',n:'Underlayment 2440x1220x12mm'},
+  {l:2440,w:1220,t:18,mat:'Underlayment',p:34.95,cat:'Underlayment',n:'Underlayment 2440x1220x18mm'},
+  {l:2050,w:920,t:10,mat:'Spaanplaat',p:12.95,cat:'Spaanplaat',n:'Spaanplaat 2050x920x10mm'},
+  {l:2050,w:920,t:12,mat:'Spaanplaat',p:14.49,cat:'Spaanplaat',n:'Spaanplaat 2050x920x12mm'},
+  {l:2050,w:920,t:16,mat:'Spaanplaat',p:15.95,cat:'Spaanplaat',n:'Spaanplaat 2050x920x16mm'},
+  {l:2050,w:920,t:18,mat:'Spaanplaat',p:16.95,cat:'Spaanplaat',n:'Spaanplaat 2050x920x18mm'},
+  {l:2440,w:1220,t:10,mat:'Spaanplaat',p:16.49,cat:'Spaanplaat',n:'Spaanplaat 2440x1220x10mm'},
+  {l:2440,w:1220,t:16,mat:'Spaanplaat',p:19.95,cat:'Spaanplaat',n:'Spaanplaat 2440x1220x16mm'},
+  {l:2440,w:1220,t:18,mat:'Spaanplaat',p:21.95,cat:'Spaanplaat',n:'Spaanplaat 2440x1220x18mm'},
+  {l:1220,w:610,t:3,mat:'Hardboard',p:2.79,cat:'Hardboard',n:'Hardboard 1220x610x3mm'},
+  {l:610,w:310,t:3,mat:'Hardboard',p:0.89,cat:'Hardboard',n:'Hardboard 610x310x3mm'},
+  {l:2440,w:1220,t:3,mat:'Hardboard',p:6.99,cat:'Hardboard',n:'Hardboard 2440x1220x3mm'},
+  {l:2440,w:1220,t:6,mat:'Hardboard',p:14.49,cat:'Hardboard',n:'Hardboard 2440x1220x6mm'},
+  {l:2750,w:1220,t:3,mat:'Hardboard',p:7.49,cat:'Hardboard',n:'Hardboard 2750x1220x3mm'},
+  {l:1700,w:1220,t:3,mat:'Hardboard',p:5.49,cat:'Hardboard',n:'Hardboard 1700x1220x3mm'},
+  {l:1220,w:1220,t:3,mat:'Hardboard',p:4.39,cat:'Hardboard',n:'Hardboard 1220x1220x3mm'},
+  {l:2140,w:1220,t:3,mat:'Hardboard',p:6.49,cat:'Hardboard',n:'Hardboard 2140x1220x3mm'}
+];
+
+const HORNBACH_BEAMS = [
+  {l:2700,h:27,w:44,mat:'Vuren',p:3.29,cat:'Balken',n:'Vuren balk 27x44x2700mm'},
+  {l:2700,h:44,w:44,mat:'Vuren',p:4.25,cat:'Balken',n:'Vuren balk 44x44x2700mm'},
+  {l:2700,h:44,w:69,mat:'Vuren',p:4.85,cat:'Balken',n:'Vuren balk 44x69x2700mm'},
+  {l:2700,h:44,w:94,mat:'Vuren',p:7.49,cat:'Balken',n:'Vuren balk 44x94x2700mm'},
+  {l:3000,h:50,w:100,mat:'Vuren',p:12.49,cat:'Balken',n:'Vuren balk 50x100x3000mm'},
+  {l:3000,h:50,w:150,mat:'Vuren',p:17.95,cat:'Balken',n:'Vuren balk 50x150x3000mm'},
+  {l:3600,h:50,w:150,mat:'Vuren',p:22.95,cat:'Balken',n:'Vuren balk 50x150x3600mm'},
+  {l:4200,h:50,w:150,mat:'Vuren',p:26.95,cat:'Balken',n:'Vuren balk 50x150x4200mm'},
+  {l:2100,h:28,w:44,mat:'Vuren geschaafd',p:3.09,cat:'Geschaafd hout',n:'Geschaafd 28x44x2100mm'},
+  {l:2100,h:28,w:69,mat:'Vuren geschaafd',p:3.89,cat:'Geschaafd hout',n:'Geschaafd 28x69x2100mm'},
+  {l:2700,h:28,w:44,mat:'Vuren geschaafd',p:3.49,cat:'Geschaafd hout',n:'Geschaafd 28x44x2700mm'},
+  {l:2700,h:28,w:69,mat:'Vuren geschaafd',p:4.39,cat:'Geschaafd hout',n:'Geschaafd 28x69x2700mm'},
+  {l:2700,h:28,w:95,mat:'Vuren geschaafd',p:6.49,cat:'Geschaafd hout',n:'Geschaafd 28x95x2700mm'},
+  {l:2700,h:28,w:120,mat:'Vuren geschaafd',p:7.99,cat:'Geschaafd hout',n:'Geschaafd 28x120x2700mm'},
+  {l:2700,h:44,w:69,mat:'Vuren geschaafd',p:6.99,cat:'Geschaafd hout',n:'Geschaafd 44x69x2700mm'},
+  {l:2700,h:44,w:95,mat:'Vuren geschaafd',p:9.49,cat:'Geschaafd hout',n:'Geschaafd 44x95x2700mm'},
+  {l:2700,h:18,w:35,mat:'Vuren lat',p:1.49,cat:'Latten',n:'Vuren lat 18x35x2700mm'},
+  {l:2700,h:18,w:44,mat:'Vuren lat',p:1.69,cat:'Latten',n:'Vuren lat 18x44x2700mm'},
+  {l:2700,h:18,w:57,mat:'Vuren lat',p:1.99,cat:'Latten',n:'Vuren lat 18x57x2700mm'},
+  {l:2700,h:18,w:69,mat:'Vuren lat',p:2.19,cat:'Latten',n:'Vuren lat 18x69x2700mm'},
+  {l:2700,h:22,w:50,mat:'Vuren lat',p:2.59,cat:'Latten',n:'Vuren lat 22x50x2700mm'},
+  {l:2700,h:27,w:44,mat:'Vuren lat',p:2.49,cat:'Latten',n:'Vuren lat 27x44x2700mm'},
+  {l:2700,h:27,w:57,mat:'Vuren lat',p:2.99,cat:'Latten',n:'Vuren lat 27x57x2700mm'}
+];
+
+function analyzeAndSuggest() {
+  const sheetParts = [];
+  const beamParts = [];
+  state.parts.forEach(p => {
+    for (let i = 0; i < (p.qty || 1); i++) {
+      if (p.cutType === 'sheet') sheetParts.push(p);
+      else beamParts.push(p);
+    }
+  });
+  if (sheetParts.length === 0 && beamParts.length === 0) {
+    showToast('No parts to analyze');
+    return;
+  }
+  let html = '<div style="font-family:system-ui;color:#e4e4e7;max-height:70vh;overflow-y:auto;padding:4px">';
+  html += '<h2 style="margin:0 0 12px;color:#f59e0b;font-size:1.25rem">Hornbach Inkoopadvies</h2>';
+  if (sheetParts.length > 0) {
+    const maxW = Math.max(...sheetParts.map(p => p.shape==='rect' ? (p.width||0) : p.shape==='circle' ? (p.diameter||0) : Math.max(p.outerL||0,p.outerW||0)));
+    const maxL = Math.max(...sheetParts.map(p => p.shape==='rect' ? (p.length||0) : p.shape==='circle' ? (p.diameter||0) : Math.max(p.outerL||0,p.outerW||0)));
+    const totalArea = sheetParts.reduce((s,p) => s + (p.area || (p.length||0)*(p.width||0)), 0);
+    const existingArea = state.sheets.reduce((s,sh) => s + sh.length * sh.width * (sh.qty||1), 0);
+    const neededArea = Math.max(0, totalArea * 1.15 - existingArea);
+    html += '<h3 style="color:#a78bfa;margin:8px 0 4px;font-size:1rem">Platen (Sheets)</h3>';
+    html += '<p style="font-size:0.8rem;color:#a1a1aa;margin:2px 0">Onderdelen: ' + sheetParts.length + ' | Totaal opp: ' + (totalArea/1e6).toFixed(3) + ' m\u00B2 | Voorraad: ' + (existingArea/1e6).toFixed(3) + ' m\u00B2</p>';
+    if (neededArea <= 0) {
+      html += '<p style="color:#22c55e;font-size:0.85rem">Voldoende voorraad aanwezig!</p>';
+    } else {
+      html += '<p style="font-size:0.8rem;color:#fbbf24;margin:2px 0">Nog nodig: ' + (neededArea/1e6).toFixed(3) + ' m\u00B2 (incl 15% marge)</p>';
+      html += '<p style="font-size:0.75rem;color:#a1a1aa;margin:2px 0">Min afmeting onderdeel: ' + maxL + 'x' + maxW + ' mm</p>';
+      const cats = [...new Set(HORNBACH_SHEETS.map(s => s.cat))];
+      html += '<table style="width:100%;border-collapse:collapse;margin:8px 0;font-size:0.8rem">';
+      html += '<tr style="border-bottom:1px solid #3f3f46"><th style="text-align:left;padding:4px;color:#a1a1aa">Product</th><th style="padding:4px;color:#a1a1aa">Prijs</th><th style="padding:4px;color:#a1a1aa">Per m\u00B2</th><th style="padding:4px;color:#a1a1aa">Stuks</th><th style="padding:4px;color:#a1a1aa">Totaal</th><th style="padding:4px"></th></tr>';
+      cats.forEach(cat => {
+        const viable = HORNBACH_SHEETS.filter(s => s.cat === cat && s.l >= maxL && s.w >= maxW);
+        if (viable.length === 0) return;
+        viable.sort((a,b) => (a.p/(a.l*a.w)) - (b.p/(b.l*b.w)));
+        const best = viable[0];
+        const areaPerSheet = best.l * best.w;
+        const qty = Math.ceil(neededArea / areaPerSheet);
+        const total = (qty * best.p).toFixed(2);
+        const perm2 = (best.p / (areaPerSheet / 1e6)).toFixed(2);
+        html += '<tr style="border-bottom:1px solid #27272a">';
+        html += '<td style="padding:4px"><span style="color:#f59e0b;font-weight:600">' + cat + '</span><br><span style="color:#d4d4d8">' + best.n + '</span></td>';
+        html += '<td style="padding:4px;text-align:center">\u20AC' + best.p.toFixed(2) + '</td>';
+        html += '<td style="padding:4px;text-align:center">\u20AC' + perm2 + '</td>';
+        html += '<td style="padding:4px;text-align:center">' + qty + '</td>';
+        html += '<td style="padding:4px;text-align:center;color:#22c55e;font-weight:600">\u20AC' + total + '</td>';
+        html += '<td style="padding:4px"><button onclick="addSuggestedSheets(' + best.l + ',' + best.w + ',\'' + best.mat + '\',' + best.t + ',' + best.p + ',' + qty + ')" style="background:#f59e0b;color:#18181b;border:none;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600">Toevoegen</button></td>';
+        html += '</tr>';
+      });
+      html += '</table>';
+    }
+  }
+  if (beamParts.length > 0) {
+    const maxLen = Math.max(...beamParts.map(p => p.length || 0));
+    const totalLen = beamParts.reduce((s,p) => s + (p.length||0), 0);
+    const existingLen = state.beams.reduce((s,b) => s + b.length * (b.qty||1), 0);
+    const neededLen = Math.max(0, totalLen * 1.15 - existingLen);
+    html += '<h3 style="color:#a78bfa;margin:12px 0 4px;font-size:1rem">Balken (Beams)</h3>';
+    html += '<p style="font-size:0.8rem;color:#a1a1aa;margin:2px 0">Onderdelen: ' + beamParts.length + ' | Totaal lengte: ' + (totalLen/1000).toFixed(2) + ' m | Voorraad: ' + (existingLen/1000).toFixed(2) + ' m</p>';
+    if (neededLen <= 0) {
+      html += '<p style="color:#22c55e;font-size:0.85rem">Voldoende voorraad aanwezig!</p>';
+    } else {
+      html += '<p style="font-size:0.8rem;color:#fbbf24;margin:2px 0">Nog nodig: ' + (neededLen/1000).toFixed(2) + ' m (incl 15% marge)</p>';
+      const cats = [...new Set(HORNBACH_BEAMS.map(b => b.cat))];
+      html += '<table style="width:100%;border-collapse:collapse;margin:8px 0;font-size:0.8rem">';
+      html += '<tr style="border-bottom:1px solid #3f3f46"><th style="text-align:left;padding:4px;color:#a1a1aa">Product</th><th style="padding:4px;color:#a1a1aa">Prijs</th><th style="padding:4px;color:#a1a1aa">Per m</th><th style="padding:4px;color:#a1a1aa">Stuks</th><th style="padding:4px;color:#a1a1aa">Totaal</th><th style="padding:4px"></th></tr>';
+      cats.forEach(cat => {
+        const viable = HORNBACH_BEAMS.filter(b => b.cat === cat && b.l >= maxLen);
+        if (viable.length === 0) return;
+        viable.sort((a,b) => (a.p/a.l) - (b.p/b.l));
+        const best = viable[0];
+        const qty = Math.ceil(neededLen / best.l);
+        const total = (qty * best.p).toFixed(2);
+        const perm = (best.p / (best.l / 1000)).toFixed(2);
+        html += '<tr style="border-bottom:1px solid #27272a">';
+        html += '<td style="padding:4px"><span style="color:#f59e0b;font-weight:600">' + cat + '</span><br><span style="color:#d4d4d8">' + best.n + '</span></td>';
+        html += '<td style="padding:4px;text-align:center">\u20AC' + best.p.toFixed(2) + '</td>';
+        html += '<td style="padding:4px;text-align:center">\u20AC' + perm + '</td>';
+        html += '<td style="padding:4px;text-align:center">' + qty + '</td>';
+        html += '<td style="padding:4px;text-align:center;color:#22c55e;font-weight:600">\u20AC' + total + '</td>';
+        html += '<td style="padding:4px"><button onclick="addSuggestedBeams(' + best.l + ',' + best.h + ',' + best.w + ',\'' + best.mat + '\',' + best.p + ',' + qty + ')" style="background:#f59e0b;color:#18181b;border:none;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:600">Toevoegen</button></td>';
+        html += '</tr>';
+      });
+      html += '</table>';
+    }
+  }
+  html += '</div>';
+  showSuggestionModal(html);
+}
+
+function addSuggestedSheets(l, w, mat, t, cost, qty) {
+  for (let i = 0; i < qty; i++) {
+    state.sheets.push({ id: Date.now() + i, material: mat, length: l, width: w, thickness: t, qty: 1, cost: cost, grain: false });
+  }
+  renderSheets();
+  showToast(qty + 'x ' + mat + ' ' + l + 'x' + w + 'x' + t + ' toegevoegd');
+  analyzeAndSuggest();
+}
+
+function addSuggestedBeams(l, h, w, mat, cost, qty) {
+  for (let i = 0; i < qty; i++) {
+    state.beams.push({ id: Date.now() + i, material: mat, length: l, height: h, width: w, qty: 1, cost: cost });
+  }
+  renderBeams();
+  showToast(qty + 'x ' + mat + ' ' + l + 'x' + h + 'x' + w + ' toegevoegd');
+  analyzeAndSuggest();
+}
+
+function showSuggestionModal(content) {
+  let modal = document.getElementById('suggestion-modal');
+  if (modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'suggestion-modal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999';
+  modal.innerHTML = '<div style="background:#27272a;border:1px solid #3f3f46;border-radius:12px;padding:20px;max-width:700px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 25px 50px rgba(0,0,0,0.5)">' + content + '<div style="text-align:right;margin-top:12px"><button onclick="document.getElementById(\'suggestion-modal\').remove()" style="background:#3f3f46;color:#e4e4e7;border:none;padding:6px 16px;border-radius:8px;cursor:pointer;font-size:0.85rem">Sluiten</button></div></div>';
+  document.body.appendChild(modal);
+}
+
+function handleSheetPresetSelect(sel) {
       const val = sel.value;
       if (!val) return;
       const parts = val.split(',');
@@ -1935,6 +2130,7 @@ function handleImportProject(file) {
       nextBeamId = Math.max(...state.beams.map(b => b.id), 0) + 1;
       nextPartId = Math.max(...state.parts.map(p => p.id), 0) + 1;
       showToast('Project imported');
+          setTimeout(() => analyzeAndSuggest(), 300);
     } catch (err) { showToast('Invalid project file'); }
   };
   reader.readAsText(file);
