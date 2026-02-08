@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Wood Cutting Optimizer</title>
+<title>Wood Cutting Optimizer - Hornbach</title>
 <meta name="description" content="Optimize wood sheet and beam cuts from DXF imports with stock inventory management">
 <meta name="theme-color" content="#f59e0b">
 <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22Wood%20Cutting%20Optimizer%22%2C%22short_name%22%3A%22CutOptimizer%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%2309090b%22%2C%22theme_color%22%3A%22%23f59e0b%22%7D">
@@ -108,23 +108,16 @@ tailwind.config = {
             <div>
               <label class="text-xs text-zinc-500 font-mono block mb-1">Materiaal</label>
               <select id="sf-material" onchange="sheetMaterialChanged()" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
-                <option value="Multiplex">Multiplex</option>
-                <option value="Underlayment">Underlayment</option>
-                <option value="MDF">MDF</option>
-                <option value="HDF">HDF</option>
-                <option value="Hardboard">Hardboard</option>
-                <option value="Spaanplaat">Spaanplaat</option>
                 <option value="OSB">OSB</option>
-                <option value="Triplex">Triplex</option>
-                <option value="Eiken fineer">Eiken fineer</option>
-                <option value="Beuken fineer">Beuken fineer</option>
-                <option value="Meranti">Meranti</option>
-                <option value="Eiken massief">Eiken massief</option>
-                <option value="Beuken massief">Beuken massief</option>
-                <option value="Walnoot">Walnoot</option>
-                <option value="Essen">Essen</option>
-                <option value="Vuren (plaat)">Vuren (plaat)</option>
-                <option value="Grenen (plaat)">Grenen (plaat)</option>
+                <option value="MDF">MDF</option>
+                <option value="MDF wit">MDF wit gegrond</option>
+                <option value="MDF vochtwerend">MDF vochtwerend</option>
+                <option value="Multiplex">Multiplex binnen</option>
+                <option value="Multiplex buiten">Multiplex buiten</option>
+                <option value="Underlayment">Underlayment</option>
+                <option value="Spaanplaat">Spaanplaat</option>
+                <option value="Spaanplaat wit">Spaanplaat gelam. wit</option>
+                <option value="Hardboard">Hardboard</option>
                 <option value="custom">Anders…</option>
               </select>
             </div>
@@ -168,32 +161,37 @@ tailwind.config = {
           <div class="flex flex-wrap gap-2 items-center">
             <span class="text-xs text-zinc-500 font-mono">Standaard maten:</span>
             <button onclick="fillSheetSize(2440,1220)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2440×1220</button>
+            <button onclick="fillSheetSize(2500,1220)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2500×1220</button>
             <button onclick="fillSheetSize(2500,1250)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2500×1250</button>
-            <button onclick="fillSheetSize(2800,2070)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2800×2070</button>
-            <button onclick="fillSheetSize(3050,1525)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">3050×1525</button>
+            <button onclick="fillSheetSize(3050,1220)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">3050×1220</button>
             <button onclick="fillSheetSize(2440,610)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2440×610</button>
+            <button onclick="fillSheetSize(2440,590)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2440×590</button>
+            <button onclick="fillSheetSize(1250,625)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">1250×625</button>
             <button onclick="fillSheetSize(1220,610)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">1220×610</button>
             <span class="text-zinc-600 mx-1">|</span>
             <span class="text-xs text-zinc-500 font-mono">Diktes:</span>
+            <button onclick="document.getElementById('sf-thickness').value=3" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">3</button>
+            <button onclick="document.getElementById('sf-thickness').value=4" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">4</button>
             <button onclick="document.getElementById('sf-thickness').value=6" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">6</button>
             <button onclick="document.getElementById('sf-thickness').value=9" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">9</button>
+            <button onclick="document.getElementById('sf-thickness').value=10" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">10</button>
+            <button onclick="document.getElementById('sf-thickness').value=11" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">11</button>
             <button onclick="document.getElementById('sf-thickness').value=12" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">12</button>
             <button onclick="document.getElementById('sf-thickness').value=15" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">15</button>
             <button onclick="document.getElementById('sf-thickness').value=18" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">18</button>
             <button onclick="document.getElementById('sf-thickness').value=22" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">22</button>
-            <button onclick="document.getElementById('sf-thickness').value=25" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">25</button>
-            <button onclick="document.getElementById('sf-thickness').value=30" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">30</button>
           </div>
         </div>
 
         <!-- Quick presets -->
         <div class="flex flex-wrap gap-2 mb-4">
           <span class="text-xs text-zinc-500 font-mono self-center">Snel:</span>
-          <button onclick="addSheetPreset(2440,1220,'Multiplex','18')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">2440×1220 Multiplex 18mm</button>
-          <button onclick="addSheetPreset(2440,1220,'MDF','18')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">2440×1220 MDF 18mm</button>
-          <button onclick="addSheetPreset(2800,2070,'Underlayment','18')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">2800×2070 Underl. 18mm</button>
-          <button onclick="addSheetPreset(2500,1250,'Eiken massief','25')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">2500×1250 Eiken 25mm</button>
-          <button onclick="addSheetPreset(2500,1250,'OSB','18')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">2500×1250 OSB 18mm</button>
+          <button onclick="addSheetPreset(2440,1220,'OSB','18')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">2440×1220 OSB 18mm €22</button>
+          <button onclick="addSheetPreset(2440,1220,'MDF','18')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">2440×1220 MDF 18mm €27</button>
+          <button onclick="addSheetPreset(2440,1220,'Underlayment','18')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">2440×1220 Underl. 18mm €31</button>
+          <button onclick="addSheetPreset(2440,1220,'MDF wit','18')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">2440×1220 MDF wit 18mm €43</button>
+          <button onclick="addSheetPreset(2440,1220,'Multiplex buiten','18')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">2440×1220 Multiplex 18mm €174</button>
+          <button onclick="addSheetPreset(2500,1250,'Spaanplaat','10')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">2500×1250 Spaanplaat 10mm €16</button>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-xs font-mono">
@@ -235,19 +233,8 @@ tailwind.config = {
             <div>
               <label class="text-xs text-zinc-500 font-mono block mb-1">Houtsoort</label>
               <select id="bf-material" onchange="beamMaterialChanged()" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
-                <option value="Vuren">Vuren</option>
-                <option value="Grenen">Grenen</option>
-                <option value="Douglas">Douglas</option>
-                <option value="Lariks">Lariks</option>
+                <option value="Vuren">Vuren (KONSTA)</option>
                 <option value="Eiken">Eiken</option>
-                <option value="Beuken">Beuken</option>
-                <option value="Meranti">Meranti</option>
-                <option value="Merbau">Merbau</option>
-                <option value="Bangkirai">Bangkirai</option>
-                <option value="Essen">Essen</option>
-                <option value="Walnoot">Walnoot</option>
-                <option value="Iroko">Iroko</option>
-                <option value="Accoya">Accoya</option>
                 <option value="custom">Anders…</option>
               </select>
             </div>
@@ -283,32 +270,30 @@ tailwind.config = {
           </div>
           <div class="flex flex-wrap gap-2 items-center">
             <span class="text-xs text-zinc-500 font-mono">Gangbare maten (H×B):</span>
-            <button onclick="fillBeamSize(22,50)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">22×50</button>
-            <button onclick="fillBeamSize(32,75)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">32×75</button>
+            <button onclick="fillBeamSize(27,44)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">27×44</button>
+            <button onclick="fillBeamSize(38,89)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">38×89</button>
             <button onclick="fillBeamSize(44,44)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">44×44</button>
-            <button onclick="fillBeamSize(45,70)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">45×70</button>
-            <button onclick="fillBeamSize(45,95)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">45×95</button>
-            <button onclick="fillBeamSize(45,145)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">45×145</button>
-            <button onclick="fillBeamSize(58,58)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">58×58</button>
-            <button onclick="fillBeamSize(63,175)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">63×175</button>
+            <button onclick="fillBeamSize(44,69)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">44×69</button>
+            <button onclick="fillBeamSize(44,94)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">44×94</button>
+            <button onclick="fillBeamSize(44,144)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">44×144</button>
+            <button onclick="fillBeamSize(59,156)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">59×156</button>
+            <button onclick="fillBeamSize(69,169)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">69×169</button>
             <span class="text-zinc-600 mx-1">|</span>
             <span class="text-xs text-zinc-500 font-mono">Lengtes:</span>
             <button onclick="document.getElementById('bf-length').value=2100" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2.1m</button>
-            <button onclick="document.getElementById('bf-length').value=2400" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2.4m</button>
+            <button onclick="document.getElementById('bf-length').value=2500" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2.5m</button>
             <button onclick="document.getElementById('bf-length').value=2700" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2.7m</button>
             <button onclick="document.getElementById('bf-length').value=3000" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">3m</button>
-            <button onclick="document.getElementById('bf-length').value=3600" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">3.6m</button>
-            <button onclick="document.getElementById('bf-length').value=4200" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">4.2m</button>
           </div>
         </div>
 
         <div class="flex flex-wrap gap-2 mb-4">
           <span class="text-xs text-zinc-500 font-mono self-center">Snel:</span>
-          <button onclick="addBeamPreset(2400,45,70,'Vuren')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">45×70 2.4m Vuren</button>
-          <button onclick="addBeamPreset(2400,45,95,'Vuren')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">45×95 2.4m Vuren</button>
-          <button onclick="addBeamPreset(3000,45,145,'Vuren')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">45×145 3m Vuren</button>
-          <button onclick="addBeamPreset(2700,58,58,'Eiken')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">58×58 2.7m Eiken</button>
-          <button onclick="addBeamPreset(2100,22,100,'Grenen')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">22×100 2.1m Grenen</button>
+          <button onclick="addBeamPreset(2700,44,69,'Vuren')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">44×69 2.7m Vuren €5</button>
+          <button onclick="addBeamPreset(2700,44,94,'Vuren')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">44×94 2.7m Vuren €7</button>
+          <button onclick="addBeamPreset(3000,44,144,'Vuren')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">44×144 3m Vuren €12</button>
+          <button onclick="addBeamPreset(2700,38,89,'Vuren')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">38×89 CLS 2.7m Vuren €6</button>
+          <button onclick="addBeamPreset(3000,69,169,'Vuren')" class="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded font-mono transition-colors">69×169 3m Vuren €26</button>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-xs font-mono">
@@ -753,7 +738,7 @@ function sheetMaterialChanged() {
   const v = document.getElementById('sf-material').value;
   document.getElementById('sf-custom-wrap').classList.toggle('hidden', v !== 'custom');
   // Auto-set grain for solid wood types
-  const grainMaterials = ['Eiken massief','Beuken massief','Walnoot','Essen','Meranti','Eiken fineer','Beuken fineer','Vuren (plaat)','Grenen (plaat)'];
+  const grainMaterials = ['Multiplex','Multiplex buiten','Underlayment'];
   document.getElementById('sf-grain').value = grainMaterials.includes(v) ? 'true' : 'false';
 }
 function fillSheetSize(l, w) {
@@ -780,12 +765,23 @@ function addSheet() {
   toggleSheetForm();
 }
 function addSheetPreset(l, w, mat, t) {
-  const grainMats = ['Eiken massief','Beuken massief','Walnoot','Essen','Meranti','Eiken fineer','Beuken fineer','Multiplex','Underlayment'];
-  state.sheets.push({ id: nextSheetId++, material: mat, length: l, width: w, thickness: parseFloat(t), qty: 1, cost: mat === 'Eiken massief' ? 95 : mat === 'Beuken massief' ? 80 : mat === 'Walnoot' ? 120 : mat === 'Multiplex' ? 55 : mat === 'Underlayment' ? 45 : mat === 'MDF' ? 30 : mat === 'OSB' ? 22 : 40, grain: grainMats.includes(mat) });
-  renderSheets();
-  showToast(`${mat} ${l}×${w}mm toegevoegd`);
-}
-function removeSheet(id) {
+      const grainMats = ['Multiplex','Multiplex buiten','Underlayment'];
+      state.sheets.push({ id: nextSheetId++, material: mat, length: l, width: w, thickness: parseFloat(t), qty: 1,
+        cost: mat === 'OSB' ? 22 :
+              mat === 'MDF' ? 27 :
+              mat === 'MDF wit' ? 43 :
+              mat === 'MDF vochtwerend' ? 28 :
+              mat === 'Multiplex' ? 70 :
+              mat === 'Multiplex buiten' ? 143 :
+              mat === 'Underlayment' ? 32 :
+              mat === 'Spaanplaat' ? 16 :
+              mat === 'Spaanplaat wit' ? 34 :
+              mat === 'Hardboard' ? 8 : 30,
+        grain: grainMats.includes(mat) });
+      renderSheets();
+      showToast(mat + ' ' + l + '×' + w + 'mm toegevoegd');
+    }
+    function removeSheet(id) {
   state.sheets = state.sheets.filter(s => s.id !== id);
   renderSheets();
 }
@@ -853,12 +849,15 @@ function addBeam() {
   toggleBeamForm();
 }
 function addBeamPreset(l, h, w, mat) {
-  const hardwoods = ['Eiken','Beuken','Meranti','Merbau','Bangkirai','Walnoot','Essen','Iroko','Accoya'];
-  state.beams.push({ id: nextBeamId++, material: mat, length: l, height: h, width: w, qty: 1, cost: hardwoods.includes(mat) ? 18 : mat === 'Grenen' ? 4 : mat === 'Douglas' ? 8 : 6 });
-  renderBeams();
-  showToast(`${mat} ${h}×${w}×${l}mm toegevoegd`);
-}
-function removeBeam(id) {
+      state.beams.push({ id: nextBeamId++, material: mat, length: l, height: h, width: w, qty: 1,
+        cost: mat === 'Eiken' ? 35 :
+              (h >= 59 || w >= 156) ? 19 :
+              (h >= 44 && w >= 94) ? 7 :
+              (h >= 38 && w >= 69) ? 5 : 4 });
+      renderBeams();
+      showToast(mat + ' ' + h + '×' + w + '×' + l + 'mm toegevoegd');
+    }
+    function removeBeam(id) {
   state.beams = state.beams.filter(b => b.id !== id);
   renderBeams();
 }
