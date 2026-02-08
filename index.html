@@ -741,6 +741,20 @@ tailwind.config = {
         <div id="offcuts-list" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
       </div>
 
+      <!-- Cut Layout Preview (Results) -->
+      <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-mono font-bold text-zinc-100 flex items-center gap-2">
+            <i data-lucide="layout" class="w-5 h-5 text-amber-500"></i> Cut Layout Preview
+          </h2>
+          <div id="sheet-tabs-results" class="flex gap-1"></div>
+        </div>
+        <div class="relative">
+          <canvas id="layout-canvas-results" class="w-full bg-zinc-800 rounded-lg border border-zinc-700" height="500"></canvas>
+        </div>
+        <div id="layout-legend-results" class="mt-3 flex flex-wrap gap-3 hidden"></div>
+      </div>
+
       <!-- Export -->
       <div class="flex gap-3 justify-end">
         <button onclick="exportCutListCSV()" class="bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-xs font-mono px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5">
@@ -797,6 +811,7 @@ function switchTab(tab) {
       : 'tab-inactive px-4 py-2 font-mono text-xs font-bold transition-colors';
   });
   if (tab === 'optimize') runPrecheck();
+    if (tab === 'results' && state.results) setTimeout(() => drawSheetLayout(), 50);
   
 }
 
@@ -1900,6 +1915,23 @@ function drawSheetLayout() {
     const color = PART_COLORS[idx % PART_COLORS.length];
     return `<div class="flex items-center gap-1.5 text-xs font-mono text-zinc-400"><span class="w-3 h-3 rounded" style="background:${color}"></span>${p ? p.name : 'Part'}</div>`;
   }).join('');
+
+    // Mirror to Results tab
+    const rc = document.getElementById('layout-canvas-results');
+    if (rc && rc.offsetWidth > 0) {
+      const rctx = rc.getContext('2d');
+      const rW = rc.offsetWidth;
+      const rH = 500;
+      rc.width = rW * dpr;
+      rc.height = rH * dpr;
+      rctx.drawImage(canvas, 0, 0);
+    }
+    const rt = document.getElementById('sheet-tabs-results');
+    if (rt) rt.innerHTML = tabsEl.innerHTML;
+    const rl = document.getElementById('layout-legend-results');
+    const ol = document.getElementById('layout-legend');
+    if (rl && ol) { rl.innerHTML = ol.innerHTML; rl.className = ol.className; }
+    lucide.createIcons();
 }
 
 function drawBeamLayout() {
