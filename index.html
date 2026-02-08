@@ -7,7 +7,7 @@
 <meta name="description" content="Optimize wood sheet and beam cuts from DXF imports with stock inventory management">
 <meta name="theme-color" content="#f59e0b">
 <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22Wood%20Cutting%20Optimizer%22%2C%22short_name%22%3A%22CutOptimizer%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%2309090b%22%2C%22theme_color%22%3A%22%23f59e0b%22%7D">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪵</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>ðªµ</text></svg>">
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -118,7 +118,7 @@ tailwind.config = {
                 <option value="Spaanplaat">Spaanplaat</option>
                 <option value="Spaanplaat wit">Spaanplaat gelam. wit</option>
                 <option value="Hardboard">Hardboard</option>
-                <option value="custom">Anders…</option>
+                <option value="custom">Andersâ¦</option>
               </select>
             </div>
             <div id="sf-custom-wrap" class="hidden">
@@ -144,14 +144,14 @@ tailwind.config = {
               <input id="sf-qty" type="number" value="1" min="1" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
             </div>
             <div>
-              <label class="text-xs text-zinc-500 font-mono block mb-1">Prijs (€/plaat)</label>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Prijs (â¬/plaat)</label>
               <input id="sf-cost" type="number" value="40" min="0" step="0.01" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
             </div>
             <div>
               <label class="text-xs text-zinc-500 font-mono block mb-1">Nerf/draad</label>
               <select id="sf-grain" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
                 <option value="false">Nee</option>
-                <option value="true">Ja — nerfrichting</option>
+                <option value="true">Ja â nerfrichting</option>
               </select>
             </div>
             <div class="flex items-end">
@@ -160,14 +160,14 @@ tailwind.config = {
           </div>
           <div class="flex flex-wrap gap-2 items-center">
             <span class="text-xs text-zinc-500 font-mono">Standaard maten:</span>
-            <button onclick="fillSheetSize(2440,1220)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2440×1220</button>
-            <button onclick="fillSheetSize(2500,1220)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2500×1220</button>
-            <button onclick="fillSheetSize(2500,1250)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2500×1250</button>
-            <button onclick="fillSheetSize(3050,1220)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">3050×1220</button>
-            <button onclick="fillSheetSize(2440,610)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2440×610</button>
-            <button onclick="fillSheetSize(2440,590)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2440×590</button>
-            <button onclick="fillSheetSize(1250,625)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">1250×625</button>
-            <button onclick="fillSheetSize(1220,610)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">1220×610</button>
+            <button onclick="fillSheetSize(2440,1220)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2440Ã1220</button>
+            <button onclick="fillSheetSize(2500,1220)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2500Ã1220</button>
+            <button onclick="fillSheetSize(2500,1250)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2500Ã1250</button>
+            <button onclick="fillSheetSize(3050,1220)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">3050Ã1220</button>
+            <button onclick="fillSheetSize(2440,610)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2440Ã610</button>
+            <button onclick="fillSheetSize(2440,590)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2440Ã590</button>
+            <button onclick="fillSheetSize(1250,625)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">1250Ã625</button>
+            <button onclick="fillSheetSize(1220,610)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">1220Ã610</button>
             <span class="text-zinc-600 mx-1">|</span>
             <span class="text-xs text-zinc-500 font-mono">Diktes:</span>
             <button onclick="document.getElementById('sf-thickness').value=3" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">3</button>
@@ -187,66 +187,66 @@ tailwind.config = {
         <div class="mb-4">
           <label class="text-xs text-zinc-500 font-mono block mb-1">Hornbach product toevoegen:</label>
           <select id="sheetPresetDropdown" onchange="handleSheetPresetSelect(this)" class="w-full text-xs px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded font-mono transition-colors border border-zinc-700 focus:border-amber-500 focus:outline-none cursor-pointer">
-            <option value="" disabled selected>Kies plaatmateriaal…</option>
+            <option value="" disabled selected>Kies plaatmateriaalâ¦</option>
               <optgroup label="OSB">
-                <option value="1250,625,OSB,15,6.7">1250×625×15mm — €6.70</option>
-                <option value="2440,610,OSB,9,8.49">2440×610×9mm — €8.49</option>
-                <option value="2440,590,OSB,12,8.99">2440×590×12mm — €8.99</option>
-                <option value="2440,590,OSB,18,11.29">2440×590×18mm — €11.29</option>
-                <option value="2440,1220,OSB,11,16.9">2440×1220×11mm — €16.90</option>
-                <option value="2440,1220,OSB,18,22.49">2440×1220×18mm — €22.49</option>
+                <option value="1250,625,OSB,15,6.7">1250Ã625Ã15mm â â¬6.70</option>
+                <option value="2440,610,OSB,9,8.49">2440Ã610Ã9mm â â¬8.49</option>
+                <option value="2440,590,OSB,12,8.99">2440Ã590Ã12mm â â¬8.99</option>
+                <option value="2440,590,OSB,18,11.29">2440Ã590Ã18mm â â¬11.29</option>
+                <option value="2440,1220,OSB,11,16.9">2440Ã1220Ã11mm â â¬16.90</option>
+                <option value="2440,1220,OSB,18,22.49">2440Ã1220Ã18mm â â¬22.49</option>
               </optgroup>
               <optgroup label="MDF">
-                <option value="1220,610,MDF,4,3.1">1220×610×4mm — €3.10</option>
-                <option value="2440,1220,MDF,4,9.95">2440×1220×4mm — €9.95</option>
-                <option value="2440,1220,MDF wit,3,11.15">2440×1220×3mm — €11.15</option>
-                <option value="2440,1220,MDF,18,26.75">2440×1220×18mm — €26.75</option>
-                <option value="2440,1220,MDF vochtwerend,6,27.85">2440×1220×6mm — €27.85</option>
-                <option value="2440,1220,MDF wit,18,43.17">2440×1220×18mm — €43.17</option>
-                <option value="2440,1220,MDF wit,18,48.2">2440×1220×18mm — €48.20</option>
+                <option value="1220,610,MDF,4,3.1">1220Ã610Ã4mm â â¬3.10</option>
+                <option value="2440,1220,MDF,4,9.95">2440Ã1220Ã4mm â â¬9.95</option>
+                <option value="2440,1220,MDF wit,3,11.15">2440Ã1220Ã3mm â â¬11.15</option>
+                <option value="2440,1220,MDF,18,26.75">2440Ã1220Ã18mm â â¬26.75</option>
+                <option value="2440,1220,MDF vochtwerend,6,27.85">2440Ã1220Ã6mm â â¬27.85</option>
+                <option value="2440,1220,MDF wit,18,43.17">2440Ã1220Ã18mm â â¬43.17</option>
+                <option value="2440,1220,MDF wit,18,48.2">2440Ã1220Ã18mm â â¬48.20</option>
               </optgroup>
               <optgroup label="Multiplex binnen">
-                <option value="1220,610,Multiplex,3.6,5.5">1220×610×3.6mm — €5.50</option>
-                <option value="1250,610,Multiplex,6,13.49">1250×610×6mm — €13.49</option>
-                <option value="2440,1220,Multiplex,3.6,16.15">2440×1220×3.6mm — €16.15</option>
-                <option value="2500,1220,Multiplex,4,36.5">2500×1220×4mm — €36.50</option>
-                <option value="2500,1220,Multiplex,7,67">2500×1220×7mm — €67.00</option>
-                <option value="2500,1220,Multiplex,12,69.55">2500×1220×12mm — €69.55</option>
-                <option value="2500,1220,Multiplex,12,83">2500×1220×12mm — €83.00</option>
+                <option value="1220,610,Multiplex,3.6,5.5">1220Ã610Ã3.6mm â â¬5.50</option>
+                <option value="1250,610,Multiplex,6,13.49">1250Ã610Ã6mm â â¬13.49</option>
+                <option value="2440,1220,Multiplex,3.6,16.15">2440Ã1220Ã3.6mm â â¬16.15</option>
+                <option value="2500,1220,Multiplex,4,36.5">2500Ã1220Ã4mm â â¬36.50</option>
+                <option value="2500,1220,Multiplex,7,67">2500Ã1220Ã7mm â â¬67.00</option>
+                <option value="2500,1220,Multiplex,12,69.55">2500Ã1220Ã12mm â â¬69.55</option>
+                <option value="2500,1220,Multiplex,12,83">2500Ã1220Ã12mm â â¬83.00</option>
               </optgroup>
               <optgroup label="Multiplex buiten">
-                <option value="2500,1220,Multiplex buiten,4,46.1">2500×1220×4mm — €46.10</option>
-                <option value="2500,1220,Multiplex buiten,10,74.99">2500×1220×10mm — €74.99</option>
-                <option value="2500,1220,Multiplex buiten,10,100.6">2500×1220×10mm — €100.60</option>
-                <option value="2500,1220,Multiplex buiten,18,143">2500×1220×18mm — €143.00</option>
-                <option value="2440,1220,Multiplex buiten,18,174.35">2440×1220×18mm — €174.35</option>
+                <option value="2500,1220,Multiplex buiten,4,46.1">2500Ã1220Ã4mm â â¬46.10</option>
+                <option value="2500,1220,Multiplex buiten,10,74.99">2500Ã1220Ã10mm â â¬74.99</option>
+                <option value="2500,1220,Multiplex buiten,10,100.6">2500Ã1220Ã10mm â â¬100.60</option>
+                <option value="2500,1220,Multiplex buiten,18,143">2500Ã1220Ã18mm â â¬143.00</option>
+                <option value="2440,1220,Multiplex buiten,18,174.35">2440Ã1220Ã18mm â â¬174.35</option>
               </optgroup>
               <optgroup label="Underlayment">
-                <option value="2440,1220,Underlayment,9,17.05">2440×1220×9mm — €17.05</option>
-                <option value="2440,1220,Underlayment,18,17.95">2440×1220×18mm — €17.95</option>
-                <option value="2440,610,Underlayment,18,26.35">2440×610×18mm — €26.35</option>
-                <option value="2440,1220,Underlayment,18,31.45">2440×1220×18mm — €31.45</option>
-                <option value="2440,1220,Underlayment,18,45.6">2440×1220×18mm — €45.60</option>
-                <option value="2440,1220,Underlayment,18,53.5">2440×1220×18mm — €53.50</option>
+                <option value="2440,1220,Underlayment,9,17.05">2440Ã1220Ã9mm â â¬17.05</option>
+                <option value="2440,1220,Underlayment,18,17.95">2440Ã1220Ã18mm â â¬17.95</option>
+                <option value="2440,610,Underlayment,18,26.35">2440Ã610Ã18mm â â¬26.35</option>
+                <option value="2440,1220,Underlayment,18,31.45">2440Ã1220Ã18mm â â¬31.45</option>
+                <option value="2440,1220,Underlayment,18,45.6">2440Ã1220Ã18mm â â¬45.60</option>
+                <option value="2440,1220,Underlayment,18,53.5">2440Ã1220Ã18mm â â¬53.50</option>
               </optgroup>
               <optgroup label="Spaanplaat">
-                <option value="2440,610,Spaanplaat,18,14.08">2440×610×18mm — €14.08</option>
-                <option value="2500,1250,Spaanplaat,10,15.55">2500×1250×10mm — €15.55</option>
-                <option value="1240,1250,Spaanplaat,18,29.45">1240×1250×18mm — €29.45</option>
-                <option value="2500,1250,Spaanplaat,10,32.5">2500×1250×10mm — €32.50</option>
-                <option value="2500,1250,Spaanplaat wit,12,32.8">2500×1250×12mm — €32.80</option>
-                <option value="2500,1250,Spaanplaat wit,10,33.95">2500×1250×10mm — €33.95</option>
-                <option value="3050,1250,Spaanplaat,16,38.5">3050×1250×16mm — €38.50</option>
+                <option value="2440,610,Spaanplaat,18,14.08">2440Ã610Ã18mm â â¬14.08</option>
+                <option value="2500,1250,Spaanplaat,10,15.55">2500Ã1250Ã10mm â â¬15.55</option>
+                <option value="1240,1250,Spaanplaat,18,29.45">1240Ã1250Ã18mm â â¬29.45</option>
+                <option value="2500,1250,Spaanplaat,10,32.5">2500Ã1250Ã10mm â â¬32.50</option>
+                <option value="2500,1250,Spaanplaat wit,12,32.8">2500Ã1250Ã12mm â â¬32.80</option>
+                <option value="2500,1250,Spaanplaat wit,10,33.95">2500Ã1250Ã10mm â â¬33.95</option>
+                <option value="3050,1250,Spaanplaat,16,38.5">3050Ã1250Ã16mm â â¬38.50</option>
               </optgroup>
               <optgroup label="Hardboard">
-                <option value="1220,610,Hardboard,3,2.18">1220×610×3mm — €2.18</option>
-                <option value="2600,610,Hardboard,3,7.45">2600×610×3mm — €7.45</option>
-                <option value="2440,1220,Hardboard,3,8.33">2440×1220×3mm — €8.33</option>
-                <option value="2440,1220,Hardboard,3,10.25">2440×1220×3mm — €10.25</option>
-                <option value="2500,1200,Hardboard,10,10.89">2500×1200×10mm — €10.89</option>
-                <option value="2600,610,Hardboard,3,14.85">2600×610×3mm — €14.85</option>
-                <option value="2600,610,Hardboard,3,14.85">2600×610×3mm — €14.85</option>
-                <option value="2000,900,Hardboard,5.5,18.75">2000×900×5.5mm — €18.75</option>
+                <option value="1220,610,Hardboard,3,2.18">1220Ã610Ã3mm â â¬2.18</option>
+                <option value="2600,610,Hardboard,3,7.45">2600Ã610Ã3mm â â¬7.45</option>
+                <option value="2440,1220,Hardboard,3,8.33">2440Ã1220Ã3mm â â¬8.33</option>
+                <option value="2440,1220,Hardboard,3,10.25">2440Ã1220Ã3mm â â¬10.25</option>
+                <option value="2500,1200,Hardboard,10,10.89">2500Ã1200Ã10mm â â¬10.89</option>
+                <option value="2600,610,Hardboard,3,14.85">2600Ã610Ã3mm â â¬14.85</option>
+                <option value="2600,610,Hardboard,3,14.85">2600Ã610Ã3mm â â¬14.85</option>
+                <option value="2000,900,Hardboard,5.5,18.75">2000Ã900Ã5.5mm â â¬18.75</option>
               </optgroup>
           </select>
         </div>
@@ -259,7 +259,7 @@ tailwind.config = {
                 <th class="text-right py-2 px-2">B (mm)</th>
                 <th class="text-right py-2 px-2">D (mm)</th>
                 <th class="text-right py-2 px-2">Aantal</th>
-                <th class="text-right py-2 px-2">€</th>
+                <th class="text-right py-2 px-2">â¬</th>
                 <th class="text-center py-2 px-2">Nerf</th>
                 <th class="py-2 px-1"></th>
               </tr>
@@ -268,7 +268,7 @@ tailwind.config = {
           </table>
           <div id="sheet-empty" class="text-center py-8 text-zinc-500">
             <i data-lucide="package-open" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
-            <p class="font-mono text-xs">Geen platen op voorraad — voeg toe via het formulier of gebruik snelknoppen</p>
+            <p class="font-mono text-xs">Geen platen op voorraad â voeg toe via het formulier of gebruik snelknoppen</p>
           </div>
         </div>
       </div>
@@ -292,7 +292,7 @@ tailwind.config = {
               <select id="bf-material" onchange="beamMaterialChanged()" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
                 <option value="Vuren">Vuren (KONSTA)</option>
                 <option value="Eiken">Eiken</option>
-                <option value="custom">Anders…</option>
+                <option value="custom">Andersâ¦</option>
               </select>
             </div>
             <div id="bf-custom-wrap" class="hidden">
@@ -318,7 +318,7 @@ tailwind.config = {
               <input id="bf-qty" type="number" value="1" min="1" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
             </div>
             <div>
-              <label class="text-xs text-zinc-500 font-mono block mb-1">Prijs (€/stuk)</label>
+              <label class="text-xs text-zinc-500 font-mono block mb-1">Prijs (â¬/stuk)</label>
               <input id="bf-cost" type="number" value="6" min="0" step="0.01" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
             </div>
             <div class="flex items-end">
@@ -326,15 +326,15 @@ tailwind.config = {
             </div>
           </div>
           <div class="flex flex-wrap gap-2 items-center">
-            <span class="text-xs text-zinc-500 font-mono">Gangbare maten (H×B):</span>
-            <button onclick="fillBeamSize(27,44)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">27×44</button>
-            <button onclick="fillBeamSize(38,89)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">38×89</button>
-            <button onclick="fillBeamSize(44,44)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">44×44</button>
-            <button onclick="fillBeamSize(44,69)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">44×69</button>
-            <button onclick="fillBeamSize(44,94)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">44×94</button>
-            <button onclick="fillBeamSize(44,144)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">44×144</button>
-            <button onclick="fillBeamSize(59,156)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">59×156</button>
-            <button onclick="fillBeamSize(69,169)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">69×169</button>
+            <span class="text-xs text-zinc-500 font-mono">Gangbare maten (HÃB):</span>
+            <button onclick="fillBeamSize(27,44)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">27Ã44</button>
+            <button onclick="fillBeamSize(38,89)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">38Ã89</button>
+            <button onclick="fillBeamSize(44,44)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">44Ã44</button>
+            <button onclick="fillBeamSize(44,69)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">44Ã69</button>
+            <button onclick="fillBeamSize(44,94)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">44Ã94</button>
+            <button onclick="fillBeamSize(44,144)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">44Ã144</button>
+            <button onclick="fillBeamSize(59,156)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">59Ã156</button>
+            <button onclick="fillBeamSize(69,169)" class="text-xs px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">69Ã169</button>
             <span class="text-zinc-600 mx-1">|</span>
             <span class="text-xs text-zinc-500 font-mono">Lengtes:</span>
             <button onclick="document.getElementById('bf-length').value=2100" class="text-xs px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-400 rounded font-mono transition-colors">2.1m</button>
@@ -348,35 +348,35 @@ tailwind.config = {
         <div class="mb-4">
           <label class="text-xs text-zinc-500 font-mono block mb-1">Hornbach product toevoegen:</label>
           <select id="beamPresetDropdown" onchange="handleBeamPresetSelect(this)" class="w-full text-xs px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded font-mono transition-colors border border-zinc-700 focus:border-amber-500 focus:outline-none cursor-pointer">
-            <option value="" disabled selected>Kies hout / balken…</option>
+            <option value="" disabled selected>Kies hout / balkenâ¦</option>
               <optgroup label="Balken">
-                <option value="2700,27,44,Vuren,3.29">27×44×2700mm Vuren — €3.29</option>
-                <option value="2700,44,44,Vuren,4">44×44×2700mm Vuren — €4.00</option>
-                <option value="2700,44,69,Vuren,4.85">44×69×2700mm Vuren — €4.85</option>
-                <option value="2700,38,89,Vuren,6.05">38×89×2700mm Vuren — €6.05</option>
-                <option value="2700,44,94,Vuren,7.2">44×94×2700mm Vuren — €7.20</option>
-                <option value="3000,44,144,Vuren,12.49">44×144×3000mm Vuren — €12.49</option>
-                <option value="2700,59,156,Vuren,18.76">59×156×2700mm Vuren — €18.76</option>
-                <option value="3000,69,169,Vuren,25.63">69×169×3000mm Vuren — €25.63</option>
+                <option value="2700,27,44,Vuren,3.29">27Ã44Ã2700mm Vuren â â¬3.29</option>
+                <option value="2700,44,44,Vuren,4">44Ã44Ã2700mm Vuren â â¬4.00</option>
+                <option value="2700,44,69,Vuren,4.85">44Ã69Ã2700mm Vuren â â¬4.85</option>
+                <option value="2700,38,89,Vuren,6.05">38Ã89Ã2700mm Vuren â â¬6.05</option>
+                <option value="2700,44,94,Vuren,7.2">44Ã94Ã2700mm Vuren â â¬7.20</option>
+                <option value="3000,44,144,Vuren,12.49">44Ã144Ã3000mm Vuren â â¬12.49</option>
+                <option value="2700,59,156,Vuren,18.76">59Ã156Ã2700mm Vuren â â¬18.76</option>
+                <option value="3000,69,169,Vuren,25.63">69Ã169Ã3000mm Vuren â â¬25.63</option>
               </optgroup>
               <optgroup label="Geschaafd hout">
-                <option value="2100,18,44,Vuren,1.85">18×44×2100mm Vuren — €1.85</option>
-                <option value="2100,18,69,Vuren,2.48">18×69×2100mm Vuren — €2.48</option>
-                <option value="2100,18,94,Vuren,4.16">18×94×2100mm Vuren — €4.16</option>
-                <option value="2100,18,119,Vuren,5.99">18×119×2100mm Vuren — €5.99</option>
-                <option value="2100,18,144,Vuren,6.93">18×144×2100mm Vuren — €6.93</option>
-                <option value="2100,18,196,Vuren,12.49">18×196×2100mm Vuren — €12.49</option>
-                <option value="2100,18.5,90,Vuren,27.95">18.5×90×2100mm Vuren — €27.95</option>
-                <option value="2500,19,195,Eiken,35.25">19×195×2500mm Eiken — €35.25</option>
+                <option value="2100,18,44,Vuren,1.85">18Ã44Ã2100mm Vuren â â¬1.85</option>
+                <option value="2100,18,69,Vuren,2.48">18Ã69Ã2100mm Vuren â â¬2.48</option>
+                <option value="2100,18,94,Vuren,4.16">18Ã94Ã2100mm Vuren â â¬4.16</option>
+                <option value="2100,18,119,Vuren,5.99">18Ã119Ã2100mm Vuren â â¬5.99</option>
+                <option value="2100,18,144,Vuren,6.93">18Ã144Ã2100mm Vuren â â¬6.93</option>
+                <option value="2100,18,196,Vuren,12.49">18Ã196Ã2100mm Vuren â â¬12.49</option>
+                <option value="2100,18.5,90,Vuren,27.95">18.5Ã90Ã2100mm Vuren â â¬27.95</option>
+                <option value="2500,19,195,Eiken,35.25">19Ã195Ã2500mm Eiken â â¬35.25</option>
               </optgroup>
               <optgroup label="Latten">
-                <option value="2100,10,38,Vuren,0.95">10×38×2100mm Vuren — €0.95</option>
-                <option value="2100,19,32,Vuren,1.13">19×32×2100mm Vuren — €1.13</option>
-                <option value="2100,22,38,Vuren,1.29">22×38×2100mm Vuren — €1.29</option>
-                <option value="2100,22,48,Vuren,1.34">22×48×2100mm Vuren — €1.34</option>
-                <option value="2100,16,50,Vuren,1.65">16×50×2100mm Vuren — €1.65</option>
-                <option value="2500,19,25,Eiken,9.35">19×25×2500mm Eiken — €9.35</option>
-                <option value="2500,19,60,Eiken,18.75">19×60×2500mm Eiken — €18.75</option>
+                <option value="2100,10,38,Vuren,0.95">10Ã38Ã2100mm Vuren â â¬0.95</option>
+                <option value="2100,19,32,Vuren,1.13">19Ã32Ã2100mm Vuren â â¬1.13</option>
+                <option value="2100,22,38,Vuren,1.29">22Ã38Ã2100mm Vuren â â¬1.29</option>
+                <option value="2100,22,48,Vuren,1.34">22Ã48Ã2100mm Vuren â â¬1.34</option>
+                <option value="2100,16,50,Vuren,1.65">16Ã50Ã2100mm Vuren â â¬1.65</option>
+                <option value="2500,19,25,Eiken,9.35">19Ã25Ã2500mm Eiken â â¬9.35</option>
+                <option value="2500,19,60,Eiken,18.75">19Ã60Ã2500mm Eiken â â¬18.75</option>
               </optgroup>
           </select>
         </div>
@@ -389,7 +389,7 @@ tailwind.config = {
                 <th class="text-right py-2 px-2">H (mm)</th>
                 <th class="text-right py-2 px-2">B (mm)</th>
                 <th class="text-right py-2 px-2">Aantal</th>
-                <th class="text-right py-2 px-2">€</th>
+                <th class="text-right py-2 px-2">â¬</th>
                 <th class="py-2 px-1"></th>
               </tr>
             </thead>
@@ -397,7 +397,7 @@ tailwind.config = {
           </table>
           <div id="beam-empty" class="text-center py-8 text-zinc-500">
             <i data-lucide="package-open" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
-            <p class="font-mono text-xs">Geen balken op voorraad — voeg toe via het formulier of gebruik snelknoppen</p>
+            <p class="font-mono text-xs">Geen balken op voorraad â voeg toe via het formulier of gebruik snelknoppen</p>
           </div>
         </div>
       </div>
@@ -419,11 +419,11 @@ tailwind.config = {
         </div>
         <div class="bg-zinc-800 rounded-lg p-3 text-center">
           <div class="text-xs text-zinc-500 font-mono mb-1">Plaat Oppervlak</div>
-          <div class="text-xl font-mono font-bold text-zinc-100" id="sum-sheet-area">0 m²</div>
+          <div class="text-xl font-mono font-bold text-zinc-100" id="sum-sheet-area">0 mÂ²</div>
         </div>
         <div class="bg-zinc-800 rounded-lg p-3 text-center">
           <div class="text-xs text-zinc-500 font-mono mb-1">Totale Waarde</div>
-          <div class="text-xl font-mono font-bold text-amber-500" id="sum-value">€0</div>
+          <div class="text-xl font-mono font-bold text-amber-500" id="sum-value">â¬0</div>
         </div>
       </div>
     </div>
@@ -524,8 +524,8 @@ tailwind.config = {
             <div>
               <label class="text-xs text-zinc-500 font-mono block mb-1">Rotation Allowed</label>
               <select id="part-rotation" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 font-mono text-sm text-zinc-100 focus:border-amber-500 focus:outline-none">
-                <option value="any">Any (0°/90°/180°/270°)</option>
-                <option value="90">90° increments only</option>
+                <option value="any">Any (0Â°/90Â°/180Â°/270Â°)</option>
+                <option value="90">90Â° increments only</option>
                 <option value="none">No rotation (grain-sensitive)</option>
               </select>
             </div>
@@ -707,7 +707,7 @@ tailwind.config = {
         </div>
         <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 text-center">
           <div class="text-xs text-zinc-500 font-mono mb-1">Est. Cost</div>
-          <div class="text-2xl font-mono font-bold text-amber-500" id="res-cost">€0</div>
+          <div class="text-2xl font-mono font-bold text-amber-500" id="res-cost">â¬0</div>
         </div>
       </div>
 
@@ -811,7 +811,7 @@ function switchTab(tab) {
       : 'tab-inactive px-4 py-2 font-mono text-xs font-bold transition-colors';
   });
   if (tab === 'optimize') runPrecheck();
-    if (tab === 'results' && state.results) setTimeout(() => drawSheetLayout(), 50);
+    if (tab === 'results' && state.results) setTimeout(() => drawSheetLayout('-results'), 50);
   
 }
 
@@ -857,7 +857,7 @@ function submitSheetForm() {
   const grain = document.getElementById('sf-grain').value === 'true';
   state.sheets.push({ id: nextSheetId++, material: mat, length: l, width: w, thickness: t, qty, cost, grain });
   renderSheets();
-  showToast(`${qty}× ${mat} ${l}×${w}×${t}mm toegevoegd`);
+  showToast(`${qty}Ã ${mat} ${l}Ã${w}Ã${t}mm toegevoegd`);
 }
 function addSheet() {
   toggleSheetForm();
@@ -1106,7 +1106,7 @@ function handleSheetPresetSelect(sel) {
               mat === 'Hardboard' ? 8 : 30,
         grain: grainMats.includes(mat) });
       renderSheets();
-      showToast(mat + ' ' + l + '×' + w + 'mm toegevoegd');
+      showToast(mat + ' ' + l + 'Ã' + w + 'mm toegevoegd');
     }
     function removeSheet(id) {
   state.sheets = state.sheets.filter(s => s.id !== id);
@@ -1125,7 +1125,7 @@ function renderSheets() {
       <td class="py-2 px-2 text-right"><input type="number" value="${s.thickness}" onchange="updateSheet(${s.id},'thickness',+this.value)" class="bg-transparent border-none text-zinc-100 w-12 text-right focus:outline-none font-mono text-xs"></td>
       <td class="py-2 px-2 text-right"><input type="number" value="${s.qty}" min="1" onchange="updateSheet(${s.id},'qty',+this.value)" class="bg-transparent border-none text-zinc-100 w-10 text-right focus:outline-none font-mono text-xs"></td>
       <td class="py-2 px-2 text-right"><input type="number" value="${s.cost}" step="0.01" onchange="updateSheet(${s.id},'cost',+this.value)" class="bg-transparent border-none text-amber-400 w-14 text-right focus:outline-none font-mono text-xs"></td>
-      <td class="py-2 px-2 text-center"><span class="text-xs ${s.grain ? 'text-amber-400' : 'text-zinc-600'} cursor-pointer" onclick="toggleSheetGrain(${s.id})">${s.grain ? '→ JA' : 'nee'}</span></td>
+      <td class="py-2 px-2 text-center"><span class="text-xs ${s.grain ? 'text-amber-400' : 'text-zinc-600'} cursor-pointer" onclick="toggleSheetGrain(${s.id})">${s.grain ? 'â JA' : 'nee'}</span></td>
       <td class="py-2 px-1"><button onclick="removeSheet(${s.id})" class="text-zinc-500 hover:text-red-400 transition-colors"><i data-lucide="x" class="w-3.5 h-3.5"></i></button></td>
     </tr>
   `).join('');
@@ -1170,7 +1170,7 @@ function submitBeamForm() {
   const cost = parseFloat(document.getElementById('bf-cost').value) || 0;
   state.beams.push({ id: nextBeamId++, material: mat, length: l, height: h, width: w, qty, cost });
   renderBeams();
-  showToast(`${qty}× ${mat} ${h}×${w}×${l}mm toegevoegd`);
+  showToast(`${qty}Ã ${mat} ${h}Ã${w}Ã${l}mm toegevoegd`);
 }
 function addBeam() {
   toggleBeamForm();
@@ -1182,7 +1182,7 @@ function addBeamPreset(l, h, w, mat) {
               (h >= 44 && w >= 94) ? 7 :
               (h >= 38 && w >= 69) ? 5 : 4 });
       renderBeams();
-      showToast(mat + ' ' + h + '×' + w + '×' + l + 'mm toegevoegd');
+      showToast(mat + ' ' + h + 'Ã' + w + 'Ã' + l + 'mm toegevoegd');
     }
     function removeBeam(id) {
   state.beams = state.beams.filter(b => b.id !== id);
@@ -1224,8 +1224,8 @@ function updateSummary() {
   const beamVal = state.beams.reduce((a, b) => a + b.cost * b.qty, 0);
   document.getElementById('sum-sheets').textContent = totalSheets;
   document.getElementById('sum-beams').textContent = totalBeams;
-  document.getElementById('sum-sheet-area').textContent = sheetArea.toFixed(2) + ' m²';
-  document.getElementById('sum-value').textContent = '€' + (sheetVal + beamVal).toFixed(2);
+  document.getElementById('sum-sheet-area').textContent = sheetArea.toFixed(2) + ' mÂ²';
+  document.getElementById('sum-value').textContent = 'â¬' + (sheetVal + beamVal).toFixed(2);
 }
 
 // ============================================================
@@ -1268,7 +1268,7 @@ function addPartManual() {
 
   state.parts.push(part);
   renderParts();
-  showToast(`Added ${qty}× ${name}`);
+  showToast(`Added ${qty}Ã ${name}`);
 }
 
 function removePart(id) {
@@ -1287,20 +1287,20 @@ function renderParts() {
   body.innerHTML = state.parts.map((p, i) => {
     const color = PART_COLORS[i % PART_COLORS.length];
     let dims = '';
-    if (p.shape === 'rect') dims = `${p.length}×${p.width} mm`;
-    else if (p.shape === 'circle') dims = `⌀${p.diameter} mm`;
-    else if (p.shape === 'lshape') dims = `L: ${p.outerL}×${p.outerW}, leg ${p.leg}mm`;
-    else dims = `${p.boundW.toFixed(0)}×${p.boundH.toFixed(0)} mm`;
+    if (p.shape === 'rect') dims = `${p.length}Ã${p.width} mm`;
+    else if (p.shape === 'circle') dims = `â${p.diameter} mm`;
+    else if (p.shape === 'lshape') dims = `L: ${p.outerL}Ã${p.outerW}, leg ${p.leg}mm`;
+    else dims = `${p.boundW.toFixed(0)}Ã${p.boundH.toFixed(0)} mm`;
     return `
       <tr class="stock-row border-b border-zinc-800 transition-colors">
         <td class="py-2 px-2"><span class="inline-block w-3 h-3 rounded" style="background:${color}"></span></td>
         <td class="py-2 px-2 text-zinc-100">${p.name}</td>
         <td class="py-2 px-2"><span class="text-xs px-1.5 py-0.5 bg-zinc-800 rounded text-zinc-400">${p.shape}</span></td>
         <td class="py-2 px-2 text-right text-zinc-300">${dims}</td>
-        <td class="py-2 px-2 text-right text-zinc-400">${(p.area / 100).toFixed(1)} cm²</td>
+        <td class="py-2 px-2 text-right text-zinc-400">${(p.area / 100).toFixed(1)} cmÂ²</td>
         <td class="py-2 px-2 text-right text-zinc-100">${p.qty}</td>
         <td class="py-2 px-2 text-center"><span class="text-xs px-1.5 py-0.5 ${p.cutType === 'sheet' ? 'bg-amber-500/10 text-amber-400' : 'bg-blue-500/10 text-blue-400'} rounded">${p.cutType}</span></td>
-        <td class="py-2 px-2 text-center text-zinc-500">${p.rotation === 'any' ? '0-270°' : p.rotation === '90' ? '90°' : 'fixed'}</td>
+        <td class="py-2 px-2 text-center text-zinc-500">${p.rotation === 'any' ? '0-270Â°' : p.rotation === '90' ? '90Â°' : 'fixed'}</td>
         <td class="py-2 px-1"><button onclick="removePart(${p.id})" class="text-zinc-500 hover:text-red-400 transition-colors"><i data-lucide="x" class="w-3.5 h-3.5"></i></button></td>
       </tr>
     `;
@@ -1389,7 +1389,7 @@ function handleDXFFile(file) {
       drawDXFPreview(entities);
       const status = document.getElementById('dxf-status');
       status.classList.remove('hidden');
-      document.getElementById('dxf-status-text').textContent = `Parsed ${entities.length} entities → ${groups.length} parts from ${file.name}`;
+      document.getElementById('dxf-status-text').textContent = `Parsed ${entities.length} entities â ${groups.length} parts from ${file.name}`;
       showToast(`Imported ${groups.length} parts from DXF`);
     } catch (err) {
       showToast('Error parsing DXF: ' + err.message);
@@ -1692,7 +1692,7 @@ function runOptimization() {
   drawBeamLayout();
   renderResults();
   switchTab('results');
-  showToast(`Optimization complete — ${utilization.toFixed(1)}% utilization`);
+  showToast(`Optimization complete â ${utilization.toFixed(1)}% utilization`);
 }
 
 // ============================================================
@@ -1879,12 +1879,12 @@ function drawSheetLayout() {
     ctx.font = `${Math.min(11, w / 6)}px "JetBrains Mono"`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const label = pl.part.name.length > 12 ? pl.part.name.slice(0, 10) + '…' : pl.part.name;
+    const label = pl.part.name.length > 12 ? pl.part.name.slice(0, 10) + 'â¦' : pl.part.name;
     if (w > 30 && h > 16) {
       ctx.fillText(label, x + w / 2, y + h / 2 - 6);
       ctx.fillStyle = '#a1a1aa';
       ctx.font = `${Math.min(9, w / 8)}px "JetBrains Mono"`;
-      ctx.fillText(`${pl.part.w || pl.w}×${pl.part.h || pl.h}`, x + w / 2, y + h / 2 + 6);
+      ctx.fillText(`${pl.part.w || pl.w}Ã${pl.part.h || pl.h}`, x + w / 2, y + h / 2 + 6);
     }
   });
 
@@ -1985,7 +1985,7 @@ function renderResults() {
   document.getElementById('res-util').textContent = state.results.utilization.toFixed(1) + '%';
   document.getElementById('res-waste').textContent = state.results.waste.toFixed(1) + '%';
   document.getElementById('res-sheets-used').textContent = state.results.sheets.length;
-  document.getElementById('res-cost').textContent = '€' + state.results.totalCost.toFixed(2);
+  document.getElementById('res-cost').textContent = 'â¬' + state.results.totalCost.toFixed(2);
 
   // Cut list
   const body = document.getElementById('cutlist-body');
@@ -1995,10 +1995,10 @@ function renderResults() {
       rows.push(`
         <tr class="border-b border-zinc-800">
           <td class="py-1.5 px-2 text-zinc-100">${pl.part.name}</td>
-          <td class="py-1.5 px-2 text-right text-zinc-400">${Math.round(pl.w)}×${Math.round(pl.h)} mm</td>
+          <td class="py-1.5 px-2 text-right text-zinc-400">${Math.round(pl.w)}Ã${Math.round(pl.h)} mm</td>
           <td class="py-1.5 px-2 text-center"><span class="text-xs px-1.5 py-0.5 bg-amber-500/10 text-amber-400 rounded">${si + 1}</span></td>
           <td class="py-1.5 px-2 text-right text-zinc-400">(${Math.round(pl.x)}, ${Math.round(pl.y)})</td>
-          <td class="py-1.5 px-2 text-center">${pl.rotated ? '<span class="text-amber-400">90°</span>' : '-'}</td>
+          <td class="py-1.5 px-2 text-center">${pl.rotated ? '<span class="text-amber-400">90Â°</span>' : '-'}</td>
         </tr>
       `);
     });
@@ -2023,8 +2023,8 @@ function renderResults() {
             <i data-lucide="square" class="w-5 h-5"></i>
           </div>
           <div>
-            <div class="font-mono text-xs text-zinc-100">${o.w} × ${o.h} mm</div>
-            <div class="text-xs text-zinc-500">Sheet #${o.sheet} · ${(o.area / 10000).toFixed(1)} cm²</div>
+            <div class="font-mono text-xs text-zinc-100">${o.w} Ã ${o.h} mm</div>
+            <div class="text-xs text-zinc-500">Sheet #${o.sheet} Â· ${(o.area / 10000).toFixed(1)} cmÂ²</div>
           </div>
         </div>
       `).join('')
@@ -2154,7 +2154,7 @@ layoutCanvas.addEventListener('mousemove', (e) => {
       tip.classList.remove('hidden');
       tip.style.left = (mx + 12) + 'px';
       tip.style.top = (my - 30) + 'px';
-      tip.innerHTML = `<span class="text-amber-400 font-bold">${pl.part.name}</span><br><span class="text-zinc-400">${Math.round(pl.w)}×${Math.round(pl.h)} mm${pl.rotated ? ' (rotated)' : ''}</span>`;
+      tip.innerHTML = `<span class="text-amber-400 font-bold">${pl.part.name}</span><br><span class="text-zinc-400">${Math.round(pl.w)}Ã${Math.round(pl.h)} mm${pl.rotated ? ' (rotated)' : ''}</span>`;
       found = true;
       break;
     }
