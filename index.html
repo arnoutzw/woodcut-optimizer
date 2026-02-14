@@ -447,7 +447,7 @@ tailwind.config = {
                onclick="document.getElementById('dxf-input').click()">
             <i data-lucide="upload-cloud" class="w-10 h-10 mx-auto mb-2 text-zinc-500"></i>
             <p class="text-zinc-400 font-mono text-xs mb-1">Drop DXF file here or click to browse</p>
-            <p class="text-zinc-600 text-xs">Supports LINE, LWPOLYLINE, CIRCLE, ARC, POLYLINE entities</p>
+            <p class="text-zinc-600 text-xs">Supports LINE, LWPOLYLINE, POLYLINE, CIRCLE, ARC, SPLINE, BLOCK/INSERT entities</p>
             <input type="file" id="dxf-input" accept=".dxf" class="hidden" onchange="handleDXFFile(this.files[0])">
           </div>
           <div id="dxf-status" class="mt-3 hidden">
@@ -1400,52 +1400,456 @@ function handleDXFFile(file) {
   reader.readAsText(file);
 }
 
-function parseDXF(text) {
-  const lines = text.split(/\r?\n/);
-  const entities = [];
+// ---- DXF low-level helpers ----
+
+// Read pairs of (code, value) from DXF lines, starting at index i.
+// Returns { pairs: [[code,value],...], nextIndex }
+// Stops when a pair with code===0 is encountered (does NOT consume it).
+function dxfReadPairs(lines, start) {
+  const pairs = [];
+  let i = start;
+  while (i + 1 < lines.length) {
+    const c = parseInt(lines[i].trim());
+    const v = lines[i + 1].trim();
+    if (c === 0) break;
+    pairs.push([c, v]);
+    i += 2;
+  }
+  return { pairs, nextIndex: i };
+}
+
+// Convert an array of [code,value] pairs into an object.
+// For codes that appear multiple times, keeps ALL values as arrays under multi[code].
+function dxfPairsToProps(pairs) {
+  const props = {};
+  const multi = {};
+  for (const [c, v] of pairs) {
+    if (multi[c]) {
+      multi[c].push(v);
+    } else if (c in props) {
+      multi[c] = [props[c], v];
+    } else {
+      props[c] = v;
+    }
+  }
+  return { props, multi };
+}
+
+// ---- B-spline / De Boor evaluation ----
+
+function deBoor(k, degree, knots, controlPoints, numSamples) {
+  // k = knot index is computed internally per t
+  // degree = spline degree
+  // knots = knot vector
+  // controlPoints = [{x,y}, ...]
+  // returns array of {x,y} points on the curve
+  const n = controlPoints.length;
+  if (n === 0) return [];
+  if (n === 1) return [{ x: controlPoints[0].x, y: controlPoints[0].y }];
+
+  const p = degree;
+  const tMin = knots[p];
+  const tMax = knots[knots.length - 1 - p];
+  if (tMin >= tMax) {
+    // Degenerate knot vector; just return control points as polyline
+    return controlPoints.map(pt => ({ x: pt.x, y: pt.y }));
+  }
+
+  const result = [];
+  for (let s = 0; s <= numSamples; s++) {
+    const t = tMin + (tMax - tMin) * s / numSamples;
+    // Find knot span index
+    let kIdx = p;
+    for (let j = p; j < knots.length - 1 - p; j++) {
+      if (t >= knots[j] && t < knots[j + 1]) { kIdx = j; break; }
+    }
+    // Clamp for last knot
+    if (t >= tMax) kIdx = knots.length - 2 - p;
+
+    // De Boor's algorithm
+    const d = [];
+    for (let j = 0; j <= p; j++) {
+      const idx = Math.max(0, Math.min(n - 1, kIdx - p + j));
+      d.push({ x: controlPoints[idx].x, y: controlPoints[idx].y });
+    }
+    for (let r = 1; r <= p; r++) {
+      for (let j = p; j >= r; j--) {
+        const left = knots[kIdx + 1 + j - p] || 0;  // knots[j+kIdx-p+1]
+        const right = knots[kIdx + 1 + j - r] || 0;  // knots[j+kIdx-r+1]
+        // Recalculate knot indices for De Boor
+        const ki1 = kIdx - p + j;  // j - s + r where s = kIdx - p
+        const kLeft = knots[ki1 + r] !== undefined ? knots[ki1 + r] : 0;
+        const kRight = knots[ki1] !== undefined ? knots[ki1] : 0;
+        const denom = kLeft - kRight;
+        if (Math.abs(denom) < 1e-10) continue;
+        const alpha = (t - kRight) / denom;
+        d[j] = {
+          x: (1 - alpha) * d[j - 1].x + alpha * d[j].x,
+          y: (1 - alpha) * d[j - 1].y + alpha * d[j].y
+        };
+      }
+    }
+    result.push({ x: d[p].x, y: d[p].y });
+  }
+  return result;
+}
+
+function evaluateSpline(entity) {
+  // entity has: controlPoints [{x,y},...], fitPoints [{x,y},...],
+  //             knots [number,...], degree (number)
+  const cp = entity.controlPoints || [];
+  const fp = entity.fitPoints || [];
+  const knots = entity.knots || [];
+  const degree = entity.degree || 3;
+
+  // If we have control points and a valid knot vector, use De Boor
+  if (cp.length >= 2 && knots.length >= cp.length + degree + 1) {
+    const numSamples = Math.max(cp.length * 8, 64);
+    return deBoor(0, degree, knots, cp, numSamples);
+  }
+
+  // Fallback: if we have fit points, use those as the polyline
+  if (fp.length >= 2) {
+    return fp.map(p => ({ x: p.x, y: p.y }));
+  }
+
+  // Last resort: connect control points with straight lines
+  if (cp.length >= 2) {
+    return cp.map(p => ({ x: p.x, y: p.y }));
+  }
+
+  return [];
+}
+
+// ---- BLOCKS section parser ----
+
+function parseDXFBlocks(lines) {
+  const blocks = {};
   let i = 0;
-  // Find ENTITIES section
-  while (i < lines.length && lines[i].trim() !== 'ENTITIES') i++;
-  i++;
+  // Find BLOCKS section
   while (i < lines.length) {
+    if (lines[i].trim() === 'BLOCKS') { i++; break; }
+    i++;
+  }
+  if (i >= lines.length) return blocks;
+
+  while (i + 1 < lines.length) {
     const code = parseInt(lines[i].trim());
-    const val = (i + 1 < lines.length) ? lines[i + 1].trim() : '';
+    const val = lines[i + 1].trim();
     if (code === 0 && val === 'ENDSEC') break;
-    if (code === 0) {
-      const etype = val;
+    if (code === 0 && val === 'BLOCK') {
       i += 2;
-      const props = {};
-      while (i < lines.length) {
+      // Read block header properties
+      const headerPairs = [];
+      while (i + 1 < lines.length) {
         const c = parseInt(lines[i].trim());
-        const v = (i + 1 < lines.length) ? lines[i + 1].trim() : '';
+        const v = lines[i + 1].trim();
         if (c === 0) break;
-        props[c] = v;
+        headerPairs.push([c, v]);
         i += 2;
       }
-      if (etype === 'LINE') {
-        entities.push({ type: 'line', x1: +props[10]||0, y1: +props[20]||0, x2: +props[11]||0, y2: +props[21]||0, layer: props[8]||'0' });
-      } else if (etype === 'CIRCLE') {
-        entities.push({ type: 'circle', cx: +props[10]||0, cy: +props[20]||0, r: +props[40]||0, layer: props[8]||'0' });
-      } else if (etype === 'ARC') {
-        entities.push({ type: 'arc', cx: +props[10]||0, cy: +props[20]||0, r: +props[40]||0, startAngle: +props[50]||0, endAngle: +props[51]||360, layer: props[8]||'0' });
-      } else if (etype === 'LWPOLYLINE') {
-        // Collect vertices
-        const verts = [];
-        const vertData = {};
-        for (const [k, v] of Object.entries(props)) {
-          const kn = parseInt(k);
-          if (kn >= 10 && kn <= 39) vertData[kn] = vertData[kn] || [];
+      const { props: hProps } = dxfPairsToProps(headerPairs);
+      const blockName = hProps[2] || '';
+      const baseX = +hProps[10] || 0;
+      const baseY = +hProps[20] || 0;
+
+      // Now parse entities inside this block until ENDBLK
+      const blockEntities = [];
+      while (i + 1 < lines.length) {
+        const c2 = parseInt(lines[i].trim());
+        const v2 = lines[i + 1].trim();
+        if (c2 === 0 && v2 === 'ENDBLK') {
+          i += 2;
+          // Skip ENDBLK properties
+          while (i + 1 < lines.length) {
+            const ec = parseInt(lines[i].trim());
+            if (ec === 0) break;
+            i += 2;
+          }
+          break;
         }
-        // Re-parse for multi-value groups
-        entities.push({ type: 'lwpolyline', layer: props[8]||'0', rawProps: props });
-      } else {
-        i = i; // skip unknown
+        if (c2 === 0) {
+          const parsed = parseDXFEntityAt(lines, i);
+          if (parsed.entity) blockEntities.push(parsed.entity);
+          i = parsed.nextIndex;
+        } else {
+          i += 2;
+        }
+      }
+      if (blockName) {
+        blocks[blockName] = { entities: blockEntities, baseX, baseY };
       }
     } else {
       i += 2;
     }
   }
-  return entities;
+  return blocks;
+}
+
+// ---- Parse a single DXF entity starting at index i (where lines[i] is code 0) ----
+// Returns { entity: {...}|null, nextIndex }
+
+function parseDXFEntityAt(lines, i) {
+  const etype = lines[i + 1].trim();
+  i += 2;
+
+  if (etype === 'POLYLINE') {
+    return parseDXFPolyline(lines, i, etype);
+  }
+
+  // For all other entity types, read pairs until next code-0
+  const { pairs, nextIndex } = dxfReadPairs(lines, i);
+  i = nextIndex;
+  const { props, multi } = dxfPairsToProps(pairs);
+
+  if (etype === 'LINE') {
+    return { entity: { type: 'line', x1: +props[10]||0, y1: +props[20]||0, x2: +props[11]||0, y2: +props[21]||0, layer: props[8]||'0' }, nextIndex: i };
+  }
+  if (etype === 'CIRCLE') {
+    return { entity: { type: 'circle', cx: +props[10]||0, cy: +props[20]||0, r: +props[40]||0, layer: props[8]||'0' }, nextIndex: i };
+  }
+  if (etype === 'ARC') {
+    return { entity: { type: 'arc', cx: +props[10]||0, cy: +props[20]||0, r: +props[40]||0, startAngle: +props[50]||0, endAngle: +props[51]||360, layer: props[8]||'0' }, nextIndex: i };
+  }
+  if (etype === 'LWPOLYLINE') {
+    return parseDXFLWPolyline(pairs, props, i);
+  }
+  if (etype === 'SPLINE') {
+    return parseDXFSpline(pairs, props, i);
+  }
+  if (etype === 'INSERT') {
+    return {
+      entity: {
+        type: 'insert',
+        blockName: props[2] || '',
+        x: +props[10] || 0,
+        y: +props[20] || 0,
+        scaleX: +props[41] || 1,
+        scaleY: +props[42] || 1,
+        rotation: +props[50] || 0,
+        layer: props[8] || '0'
+      },
+      nextIndex: i
+    };
+  }
+  // Unknown entity type – skip
+  return { entity: null, nextIndex: i };
+}
+
+// Parse LWPOLYLINE: vertices come as repeated code-10/20 pairs
+// Bulge (code 42) follows after code 20 and applies to the preceding vertex
+function parseDXFLWPolyline(pairs, props, nextIndex) {
+  const vertices = [];
+  let curX = null;
+  const closed = (+props[70] || 0) & 1;
+  for (const [c, v] of pairs) {
+    if (c === 10) {
+      curX = +v;
+    } else if (c === 20) {
+      vertices.push({ x: curX !== null ? curX : 0, y: +v, bulge: 0 });
+      curX = null;
+    } else if (c === 42) {
+      // Bulge applies to the most recently added vertex
+      if (vertices.length > 0) vertices[vertices.length - 1].bulge = +v;
+    }
+  }
+  return {
+    entity: { type: 'lwpolyline', vertices, closed: !!closed, layer: props[8] || '0' },
+    nextIndex
+  };
+}
+
+// Parse old-style POLYLINE: the POLYLINE entity is followed by VERTEX entities until SEQEND
+function parseDXFPolyline(lines, i, etype) {
+  // Read POLYLINE header properties
+  const { pairs: headerPairs, nextIndex: afterHeader } = dxfReadPairs(lines, i);
+  i = afterHeader;
+  const { props: hProps } = dxfPairsToProps(headerPairs);
+  const closed = (+hProps[70] || 0) & 1;
+  const layer = hProps[8] || '0';
+
+  // Collect VERTEX entities until SEQEND
+  const vertices = [];
+  while (i + 1 < lines.length) {
+    const c = parseInt(lines[i].trim());
+    const v = lines[i + 1].trim();
+    if (c === 0 && v === 'SEQEND') {
+      i += 2;
+      // Skip SEQEND properties
+      while (i + 1 < lines.length) {
+        const sc = parseInt(lines[i].trim());
+        if (sc === 0) break;
+        i += 2;
+      }
+      break;
+    }
+    if (c === 0 && v === 'VERTEX') {
+      i += 2;
+      const { pairs: vPairs, nextIndex: afterV } = dxfReadPairs(lines, i);
+      i = afterV;
+      const { props: vProps } = dxfPairsToProps(vPairs);
+      vertices.push({
+        x: +vProps[10] || 0,
+        y: +vProps[20] || 0,
+        bulge: +vProps[42] || 0
+      });
+    } else if (c === 0) {
+      // Some other entity type encountered before SEQEND – stop
+      break;
+    } else {
+      i += 2;
+    }
+  }
+  return {
+    entity: { type: 'polyline', vertices, closed: !!closed, layer },
+    nextIndex: i
+  };
+}
+
+// Parse SPLINE: control points (10/20), fit points (11/21), knots (40)
+function parseDXFSpline(pairs, props, nextIndex) {
+  const degree = +props[71] || 3;
+  const knots = [];
+  const controlPoints = [];
+  const fitPoints = [];
+  let cpX = null, fpX = null;
+
+  for (const [c, v] of pairs) {
+    if (c === 40) {
+      knots.push(+v);
+    } else if (c === 10) {
+      if (cpX !== null) controlPoints.push({ x: cpX, y: 0 });
+      cpX = +v;
+    } else if (c === 20) {
+      controlPoints.push({ x: cpX !== null ? cpX : 0, y: +v });
+      cpX = null;
+    } else if (c === 11) {
+      if (fpX !== null) fitPoints.push({ x: fpX, y: 0 });
+      fpX = +v;
+    } else if (c === 21) {
+      fitPoints.push({ x: fpX !== null ? fpX : 0, y: +v });
+      fpX = null;
+    }
+  }
+  if (cpX !== null) controlPoints.push({ x: cpX, y: 0 });
+  if (fpX !== null) fitPoints.push({ x: fpX, y: 0 });
+
+  // Evaluate the spline into a polyline
+  const splineEntity = { degree, knots, controlPoints, fitPoints };
+  const pts = evaluateSpline(splineEntity);
+
+  return {
+    entity: {
+      type: 'spline',
+      vertices: pts,
+      layer: props[8] || '0'
+    },
+    nextIndex
+  };
+}
+
+// ---- Expand INSERT entities by substituting block geometry ----
+
+function expandInserts(entities, blocks) {
+  const result = [];
+  for (const e of entities) {
+    if (e.type === 'insert' && blocks[e.blockName]) {
+      const block = blocks[e.blockName];
+      const cosA = Math.cos(e.rotation * Math.PI / 180);
+      const sinA = Math.sin(e.rotation * Math.PI / 180);
+      const sx = e.scaleX;
+      const sy = e.scaleY;
+      const bx = block.baseX;
+      const by = block.baseY;
+
+      const transform = (px, py) => {
+        // Translate relative to block base point, scale, rotate, then translate to insert position
+        const dx = (px - bx) * sx;
+        const dy = (py - by) * sy;
+        return {
+          x: e.x + dx * cosA - dy * sinA,
+          y: e.y + dx * sinA + dy * cosA
+        };
+      };
+
+      for (const be of block.entities) {
+        const expanded = transformEntity(be, transform);
+        if (expanded) {
+          expanded.layer = expanded.layer || e.layer;
+          result.push(expanded);
+        }
+      }
+    } else {
+      result.push(e);
+    }
+  }
+  return result;
+}
+
+function transformEntity(entity, transform) {
+  switch (entity.type) {
+    case 'line': {
+      const p1 = transform(entity.x1, entity.y1);
+      const p2 = transform(entity.x2, entity.y2);
+      return { type: 'line', x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, layer: entity.layer };
+    }
+    case 'circle': {
+      const center = transform(entity.cx, entity.cy);
+      // Scale radius by average of scaleX/scaleY (approximate for non-uniform)
+      const p2 = transform(entity.cx + entity.r, entity.cy);
+      const r = Math.sqrt((p2.x - center.x) ** 2 + (p2.y - center.y) ** 2);
+      return { type: 'circle', cx: center.x, cy: center.y, r, layer: entity.layer };
+    }
+    case 'arc': {
+      const center = transform(entity.cx, entity.cy);
+      const p2 = transform(entity.cx + entity.r, entity.cy);
+      const r = Math.sqrt((p2.x - center.x) ** 2 + (p2.y - center.y) ** 2);
+      // Adjust angles for rotation
+      const rot = Math.atan2(p2.y - center.y, p2.x - center.x) * 180 / Math.PI;
+      return { type: 'arc', cx: center.x, cy: center.y, r, startAngle: entity.startAngle + rot, endAngle: entity.endAngle + rot, layer: entity.layer };
+    }
+    case 'lwpolyline':
+    case 'polyline':
+    case 'spline': {
+      const verts = (entity.vertices || []).map(v => {
+        const tp = transform(v.x, v.y);
+        return { x: tp.x, y: tp.y, bulge: v.bulge || 0 };
+      });
+      return { type: entity.type, vertices: verts, closed: entity.closed, layer: entity.layer };
+    }
+    default:
+      return null;
+  }
+}
+
+// ---- Main DXF parser ----
+
+function parseDXF(text) {
+  const lines = text.split(/\r?\n/);
+
+  // 1. Parse BLOCKS section
+  const blocks = parseDXFBlocks(lines);
+
+  // 2. Parse ENTITIES section
+  const entities = [];
+  let i = 0;
+  while (i < lines.length && lines[i].trim() !== 'ENTITIES') i++;
+  i++;
+  while (i + 1 < lines.length) {
+    const code = parseInt(lines[i].trim());
+    const val = lines[i + 1].trim();
+    if (code === 0 && val === 'ENDSEC') break;
+    if (code === 0) {
+      const parsed = parseDXFEntityAt(lines, i);
+      if (parsed.entity) entities.push(parsed.entity);
+      i = parsed.nextIndex;
+    } else {
+      i += 2;
+    }
+  }
+
+  // 3. Expand INSERT entities using parsed blocks
+  return expandInserts(entities, blocks);
 }
 
 function groupEntitiesIntoParts(entities) {
@@ -1461,6 +1865,8 @@ function groupEntitiesIntoParts(entities) {
       layers[layer].points.push([e.cx - e.r, e.cy - e.r], [e.cx + e.r, e.cy + e.r]);
     } else if (e.type === 'arc') {
       layers[layer].points.push([e.cx - e.r, e.cy - e.r], [e.cx + e.r, e.cy + e.r]);
+    } else if (e.type === 'lwpolyline' || e.type === 'polyline' || e.type === 'spline') {
+      if (e.vertices) e.vertices.forEach(v => layers[layer].points.push([v.x, v.y]));
     }
   });
   return Object.entries(layers).map(([name, data]) => ({
@@ -1487,6 +1893,9 @@ function drawDXFPreview(entities) {
   entities.forEach(e => {
     if (e.type === 'line') allPts.push([e.x1, e.y1], [e.x2, e.y2]);
     else if (e.type === 'circle' || e.type === 'arc') allPts.push([e.cx - e.r, e.cy - e.r], [e.cx + e.r, e.cy + e.r]);
+    else if ((e.type === 'lwpolyline' || e.type === 'polyline' || e.type === 'spline') && e.vertices) {
+      e.vertices.forEach(v => allPts.push([v.x, v.y]));
+    }
   });
   if (allPts.length === 0) return;
   const minX = Math.min(...allPts.map(p => p[0]));
@@ -1519,6 +1928,14 @@ function drawDXFPreview(entities) {
       const sa = -e.endAngle * Math.PI / 180;
       const ea = -e.startAngle * Math.PI / 180;
       ctx.arc(tx(e.cx), ty(e.cy), e.r * scale, sa, ea);
+      ctx.stroke();
+    } else if ((e.type === 'lwpolyline' || e.type === 'polyline' || e.type === 'spline') && e.vertices && e.vertices.length > 0) {
+      ctx.beginPath();
+      ctx.moveTo(tx(e.vertices[0].x), ty(e.vertices[0].y));
+      for (let vi = 1; vi < e.vertices.length; vi++) {
+        ctx.lineTo(tx(e.vertices[vi].x), ty(e.vertices[vi].y));
+      }
+      if (e.closed) ctx.closePath();
       ctx.stroke();
     }
   });
